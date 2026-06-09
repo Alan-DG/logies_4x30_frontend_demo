@@ -120,16 +120,18 @@ Configuratie staat in `vercel.json`: alle routes worden doorgestuurd naar `index
 ## Projectstructuur
 
 ```
-├── App.js                    # React-applicatie (dashboard + kaart)
-├── index.js                  # Entrypoint
-├── index.html                # HTML-shell
-├── style.css                 # Globale CSS (variabelen, hover-klassen)
 ├── api/
 │   └── basisregister.js      # Vercel serverless function
-├── vercel.json               # Vercel routing-configuratie
+├── public/
+│   └── index.html            # HTML-shell
+├── src/
+│   ├── App.js                # React-applicatie (dashboard + kaart)
+│   ├── index.js              # Entrypoint
+│   └── style.css             # Globale CSS (variabelen, hover-klassen)
+├── LICENSE
+├── README.md
 ├── package.json
-├── logies_4x30_controle.py   # Referentie Python-script (analyse-engine), niet opgenomen in repo
-└── reservaties_dummy_2026.xlsx  # Testdata (9 scenario's), niet opgenomen in repo
+└── vercel.json               # Vercel routing-configuratie
 ```
 
 ---
