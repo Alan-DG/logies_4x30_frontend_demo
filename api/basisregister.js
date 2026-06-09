@@ -106,9 +106,11 @@ module.exports = async (req, res) => {
       if (row.product_type !== 'BASE') continue;
       if (!LEUVEN_POSTCODES.has(parseInt(row.postal_code, 10))) continue;
 
+      // Coordinates are optional — entries without them still appear in the
+      // analysis engine's register lookup (to avoid false nk flags).
+      // The map simply skips entries where lat/lon are null.
       const lat = coordNorm(row.lat,  49, 52);
       const lon = coordNorm(row.long,  2,  7);
-      if (!lat || !lon) continue;
 
       const raw  = (row.name_or_number || row.name || '—').trim().replace(/^'+|'+$/g, '');
       const box  = row.box_number?.trim().replace(/^bus\s*/i, '');
@@ -121,8 +123,8 @@ module.exports = async (req, res) => {
         disc:   DISC_MAP[row.discriminator] || row.discriminator || '—',
         units:  parseInt(row.number_of_units,   10) || null,
         cap:    parseInt(row.maximum_capacity,   10) || null,
-        lat,
-        lon,
+        lat:    lat ?? null,
+        lon:    lon ?? null,
         status: row.status || '',
       });
     }
