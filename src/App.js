@@ -25,26 +25,6 @@ import {
 import * as XLSX from 'xlsx';
 import L from 'leaflet';
 
-// ─── Global CSS ───────────────────────────────────────────────────────────────
-const CSS = `
- :root {
-   --p1c:#185FA5; --p2c:#378ADD; --p3c:#85B7EB; --p4c:#B5D4F4;
-   --pvc:#A32D2D; --pvbg:rgba(163,45,45,0.08);
-   --tl:rgba(24,95,165,0.08); --tlg:rgba(24,95,165,0.15);
- }
- @media (prefers-color-scheme: dark) {
-   :root {
-     --p1c:#B5D4F4; --p2c:#85B7EB; --p3c:#378ADD; --p4c:#185FA5;
-     --pvc:#F09595; --pvbg:rgba(240,149,149,0.1);
-     --tl:rgba(181,212,244,0.08); --tlg:rgba(181,212,244,0.15);
-   }
- }
- .row-hover:hover { background: var(--color-background-secondary, #f8fafc) !important; }
- .leg-row { display:flex; align-items:center; gap:7px; padding:3px 5px;
-   cursor:pointer; border-radius:4px; user-select:none; transition:opacity .14s, background .12s; }
- .leg-row:hover { background: rgba(0,0,0,0.04); }
- `;
-
 // ─── Theme variables ──────────────────────────────────────────────────────────
 const V = {
   bg: 'var(--color-background-primary, #fff)',
@@ -84,6 +64,7 @@ const DISC_COLORS = {
 
 const SIZE_BUCKETS = ['1', '2–9', '10–30', '31–75', '76–100', '101+'];
 const SIZE_RADII = [5, 7, 10, 13, 16, 20]; // px, constant regardless of zoom
+const SIZE_THRESHOLDS = [1, 9, 30, 75, 100]; // unit-count bucket boundaries
 
 const FLAG_DEFS = [
   { key: 'ov', label: '4×30 — vergunning vereist', color: '#b91c1c' },
@@ -94,17 +75,15 @@ const FLAG_DEFS = [
 ];
 
 function sizeRadius(n) {
-  const thresholds = [1, 9, 30, 75, 100];
-  for (let i = 0; i < thresholds.length; i++) {
-    if (n <= thresholds[i]) return SIZE_RADII[i];
+  for (let i = 0; i < SIZE_THRESHOLDS.length; i++) {
+    if (n <= SIZE_THRESHOLDS[i]) return SIZE_RADII[i];
   }
   return SIZE_RADII[SIZE_RADII.length - 1];
 }
 
 function sizeBucket(n) {
-  const thresholds = [1, 9, 30, 75, 100];
-  for (let i = 0; i < thresholds.length; i++) {
-    if (n <= thresholds[i]) return SIZE_BUCKETS[i];
+  for (let i = 0; i < SIZE_THRESHOLDS.length; i++) {
+    if (n <= SIZE_THRESHOLDS[i]) return SIZE_BUCKETS[i];
   }
   return SIZE_BUCKETS[SIZE_BUCKETS.length - 1];
 }
@@ -272,31 +251,19 @@ function runAnalysis(excelRows, basisregister) {
 // DASHBOARD COMPONENTS (unchanged from original)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+const MAANDEN_KORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+
 function doy(ds) {
   if (!ds) return 0;
   const d = new Date(ds + 'T12:00:00'),
-    j = new Date('2026-01-01T12:00:00');
+    j = new Date(`${ANALYSIS_YEAR}-01-01T12:00:00`);
   return Math.max(0, Math.min(365, Math.round((d - j) / 86400000)));
 }
-const pN = (d) => (doy(d) / 365) * 100;
+const dayToPct = (d) => (doy(d) / 365) * 100;
 function fmt(ds) {
   if (!ds) return '—';
-  const m = [
-    'jan',
-    'feb',
-    'mrt',
-    'apr',
-    'mei',
-    'jun',
-    'jul',
-    'aug',
-    'sep',
-    'okt',
-    'nov',
-    'dec',
-  ];
   const d = new Date(ds + 'T12:00:00');
-  return `${d.getDate()} ${m[d.getMonth()]}`;
+  return `${d.getDate()} ${MAANDEN_KORT[d.getMonth()]}`;
 }
 
 function SecTitle({ children }) {
@@ -357,20 +324,7 @@ function Chip({ active, label, color, Icon = AlertTriangle }) {
 
 function Timeline({ periodes, eersteOv }) {
   if (!periodes) return null;
-  const M = [
-    'jan',
-    'feb',
-    'mrt',
-    'apr',
-    'mei',
-    'jun',
-    'jul',
-    'aug',
-    'sep',
-    'okt',
-    'nov',
-    'dec',
-  ];
+  const M = MAANDEN_KORT;
   const MD = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
   const PC = ['var(--p1c)', 'var(--p2c)', 'var(--p3c)', 'var(--p4c)'];
   return (
@@ -415,8 +369,8 @@ function Timeline({ periodes, eersteOv }) {
           />
         ))}
         {periodes.map((p, i) => {
-          const l = pN(p.start),
-            r = Math.min(100, pN(p.einde)),
+          const l = dayToPct(p.start),
+            r = Math.min(100, dayToPct(p.einde)),
             w = Math.max(r - l, 0.5);
           const c = p.v ? 'var(--pvc)' : PC[Math.min(i, 3)];
           return (
@@ -450,7 +404,7 @@ function Timeline({ periodes, eersteOv }) {
           <div
             style={{
               position: 'absolute',
-              left: `${pN(eersteOv)}%`,
+              left: `${dayToPct(eersteOv)}%`,
               top: -4,
               bottom: -4,
               width: 2,
@@ -1033,6 +987,14 @@ function DetailPanel({ acc, onClose }) {
 // MAP HELPERS  (plain HTML strings — used by Leaflet's bindPopup / bindTooltip)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function buildTooltipHTML(acc) {
   const units = acc.units != null
     ? `${acc.units} unit${acc.units !== 1 ? 's' : ''} · max ${acc.cap} gasten`
@@ -1043,7 +1005,7 @@ function buildTooltipHTML(acc) {
       ? '&#9651; Overtredingen vastgesteld'
       : '&#10003; Geen overtredingen';
   return `<span style="font-family:system-ui,sans-serif;line-height:1.6">
-    <strong>${acc.naam}</strong><br>${acc.disc} · #${acc.id}<br>${units}<br>
+    <strong>${escapeHtml(acc.naam)}</strong><br>${escapeHtml(acc.disc)} · #${acc.id}<br>${units}<br>
     <span style="font-size:10px;opacity:0.8">${tierLabel}</span>
   </span>`;
 }
@@ -1059,7 +1021,7 @@ function buildPopupHTML(acc) {
 
   const chips = chipValues.map(t =>
     `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;` +
-    `background:#f1f5f9;color:#475569;border:0.5px solid #e2e8f0;margin:0 3px 3px 0">${t}</span>`
+    `background:#f1f5f9;color:#475569;border:0.5px solid #e2e8f0;margin:0 3px 3px 0">${escapeHtml(t)}</span>`
   ).join('');
 
   let statusHTML = '';
@@ -1084,16 +1046,13 @@ function buildPopupHTML(acc) {
 
   return (
     `<div style="font-family:system-ui,sans-serif;padding:4px 2px;min-width:230px">` +
-    `<div style="font-weight:600;font-size:13px;margin-bottom:3px;line-height:1.3">${acc.naam}</div>` +
-    `<div style="font-size:11px;color:#64748b;margin-bottom:8px">${acc.adres}</div>` +
+    `<div style="font-weight:600;font-size:13px;margin-bottom:3px;line-height:1.3">${escapeHtml(acc.naam)}</div>` +
+    `<div style="font-size:11px;color:#64748b;margin-bottom:8px">${escapeHtml(acc.adres)}</div>` +
     `<div style="margin-bottom:6px">${chips}</div>` +
     statusHTML +
     `</div>`
   );
 }
-
-// placeholder so the section header is preserved — real logic is in KaartPage useEffect
-function _mapMarkerPlaceholder() {}
 
 /** Legend panel rendered as an absolute overlay on the map wrapper div. */
 function MapLegend({
@@ -1244,6 +1203,7 @@ function KaartPage({ basisregister, basisregisterLoading, analysisResults }) {
   const mergedData = useMemo(() => {
     if (!basisregister) return [];
     const byId = new Map((analysisResults || []).map(r => [r.id, r]));
+    const basisIds = new Set(basisregister.map(b => b.id));
     const result = [];
     basisregister.forEach(reg => {
       const p = byId.get(reg.id);
@@ -1256,8 +1216,9 @@ function KaartPage({ basisregister, basisregisterLoading, analysisResults }) {
       }
     });
     // Include platform entries not found in basisregister.
+    // Uses the basisIds Set above — O(1) lookup instead of O(n) scan.
     (analysisResults || []).forEach(r => {
-      if (!basisregister.some(b => b.id === r.id))
+      if (!basisIds.has(r.id))
         result.push({ ...r });
     });
     return result;
@@ -1335,6 +1296,7 @@ function KaartPage({ basisregister, basisregisterLoading, analysisResults }) {
       ...toShow.filter(a => a.tier !== 'register'),
     ];
 
+    let popupTimer;
     sorted.forEach(acc => {
       const isSelected  = searchResult?.id === acc.id;
       const color       = DISC_COLORS[acc.disc] || '#888888';
@@ -1354,8 +1316,9 @@ function KaartPage({ basisregister, basisregisterLoading, analysisResults }) {
       marker.bindTooltip(buildTooltipHTML(acc));
       marker.addTo(mapRef.current);
       markersRef.current.push(marker);
-      if (isSelected) setTimeout(() => marker.openPopup(), 1350);
+      if (isSelected) popupTimer = setTimeout(() => marker.openPopup(), 1350);
     });
+    return () => { clearTimeout(popupTimer); };
   }, [filteredData, searchResult]);
 
   // ── Fly to search result ──────────────────────────────────────────────────
@@ -1457,6 +1420,8 @@ function KaartPage({ basisregister, basisregisterLoading, analysisResults }) {
 // APP (root)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+const TABLE_COLS = 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 36px 36px 36px 36px 36px';
+
 const FLAG_COLS = [
   { key: 'ov', title: '4×30', color: V.danger, Icon: AlertTriangle },
   { key: 'un', title: 'Units', color: V.warn, Icon: Users },
@@ -1523,7 +1488,7 @@ export default function App() {
       runAnalysisWithFile(pendingFile, basisregister);
       setPendingFile(null);
     }
-  }, [basisregister]);
+  }, [basisregister, pendingFile]);
 
   useEffect(() => { if (page !== 'dashboard') setSelected(null); }, [page]);
 
@@ -1560,7 +1525,7 @@ export default function App() {
 
   useEffect(() => {
     if (selected && !filtered.find(a => a.id === selected.id)) setSelected(null);
-  }, [filtered]);
+  }, [filtered, selected]);
 
   const FBTNS = [
     { id: 'all',     label: 'Alle' },
@@ -1590,7 +1555,6 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'var(--font-sans, system-ui, sans-serif)' }}>
-      <style>{CSS}</style>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div style={{ background: V.bg2, padding: '12px 20px 0', borderBottom: `0.5px solid ${V.b}` }}>
@@ -1765,7 +1729,7 @@ export default function App() {
                   {/* Table */}
                   <div style={{ background: V.bg, borderRadius: V.rl, border: `0.5px solid ${V.b}`, overflow: 'hidden' }}>
                     <div style={{ display: 'grid',
-                      gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 36px 36px 36px 36px 36px',
+                      gridTemplateColumns: TABLE_COLS,
                       padding: '8px 16px', background: V.bg2, borderBottom: `0.5px solid ${V.b}`,
                       fontSize: 11, fontWeight: 500, color: V.txt2, gap: 8 }}>
                       <div>Logies</div><div>Platform</div><div>Type</div>
@@ -1783,10 +1747,9 @@ export default function App() {
                       return (
                         <div key={acc.id}
                           onClick={() => setSelected(sel ? null : acc)}
-                          onMouseEnter={e => { if (!sel) e.currentTarget.style.background = V.bg2; }}
-                          onMouseLeave={e => { if (!sel) e.currentTarget.style.background = V.bg; }}
+                          className={sel ? undefined : 'row-hover'}
                           style={{ display: 'grid',
-                            gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 36px 36px 36px 36px 36px',
+                            gridTemplateColumns: TABLE_COLS,
                             padding: '11px 16px', paddingLeft: sel ? '13px' : '16px',
                             borderBottom: `0.5px solid ${V.b}`,
                             borderLeft: sel ? `3px solid ${V.info}` : '3px solid transparent',
