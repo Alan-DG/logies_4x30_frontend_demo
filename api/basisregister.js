@@ -83,6 +83,10 @@ async function findCsvUrl(html) {
 }
 
 module.exports = async (req, res) => {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
   // Serve fresh for 1 h; CDN may serve stale for up to 6 h while revalidating.
   res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=21600');
 
