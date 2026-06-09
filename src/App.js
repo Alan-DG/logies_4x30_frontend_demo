@@ -22,27 +22,28 @@ import {
   HelpCircle,
   MapPin,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import L from 'leaflet';
 
 // ─── Global CSS ───────────────────────────────────────────────────────────────
 const CSS = `
-  :root {
-    --p1c:#185FA5; --p2c:#378ADD; --p3c:#85B7EB; --p4c:#B5D4F4;
-    --pvc:#A32D2D; --pvbg:rgba(163,45,45,0.08);
-    --tl:rgba(24,95,165,0.08); --tlg:rgba(24,95,165,0.15);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --p1c:#B5D4F4; --p2c:#85B7EB; --p3c:#378ADD; --p4c:#185FA5;
-      --pvc:#F09595; --pvbg:rgba(240,149,149,0.1);
-      --tl:rgba(181,212,244,0.08); --tlg:rgba(181,212,244,0.15);
-    }
-  }
-  .row-hover:hover { background: var(--color-background-secondary, #f8fafc) !important; }
-  .leg-row { display:flex; align-items:center; gap:7px; padding:3px 5px;
-    cursor:pointer; border-radius:4px; user-select:none; transition:opacity .14s, background .12s; }
-  .leg-row:hover { background: rgba(0,0,0,0.04); }
-  `;
+ :root {
+   --p1c:#185FA5; --p2c:#378ADD; --p3c:#85B7EB; --p4c:#B5D4F4;
+   --pvc:#A32D2D; --pvbg:rgba(163,45,45,0.08);
+   --tl:rgba(24,95,165,0.08); --tlg:rgba(24,95,165,0.15);
+ }
+ @media (prefers-color-scheme: dark) {
+   :root {
+     --p1c:#B5D4F4; --p2c:#85B7EB; --p3c:#378ADD; --p4c:#185FA5;
+     --pvc:#F09595; --pvbg:rgba(240,149,149,0.1);
+     --tl:rgba(181,212,244,0.08); --tlg:rgba(181,212,244,0.15);
+   }
+ }
+ .row-hover:hover { background: var(--color-background-secondary, #f8fafc) !important; }
+ .leg-row { display:flex; align-items:center; gap:7px; padding:3px 5px;
+   cursor:pointer; border-radius:4px; user-select:none; transition:opacity .14s, background .12s; }
+ .leg-row:hover { background: rgba(0,0,0,0.04); }
+ `;
 
 // ─── Theme variables ──────────────────────────────────────────────────────────
 const V = {
@@ -110,4182 +111,162 @@ function sizeBucket(n) {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 // lat/lon added: realistic Leuven coordinates per address.
-const DATA = [
-  {
-    id: 234567,
-    naam: 'Hotel Industrie & Bloom',
-    adres: 'Industrieweg 14, 3000 Leuven',
-    platform: 'Airbnb',
-    disc: 'Hotel',
-    units: 17,
-    cap: 35,
-    lat: 50.8875,
-    lon: 4.7185,
-    flags: { ov: true, un: false, ca: false, nk: false, ad: false },
-    periodes: [
-      { nr: 1, start: '2026-01-05', einde: '2026-02-04', n: 28 },
-      { nr: 2, start: '2026-02-20', einde: '2026-03-22', n: 24 },
-      { nr: 3, start: '2026-04-10', einde: '2026-05-10', n: 26 },
-      { nr: 4, start: '2026-06-01', einde: '2026-07-01', n: 22 },
-      { nr: 5, start: '2026-07-20', einde: '2026-08-07', n: 18, v: true },
-    ],
-    eersteOv: '2026-07-20',
-    nachtenOv: 18,
-    boekingen: [
-      { id: 1, start: '2026-01-05', einde: '2026-02-02', g: 4, pl: 'Airbnb' },
-      { id: 2, start: '2026-02-20', einde: '2026-03-15', g: 3, pl: 'Airbnb' },
-      { id: 3, start: '2026-04-10', einde: '2026-05-05', g: 5, pl: 'Airbnb' },
-      { id: 4, start: '2026-06-01', einde: '2026-06-23', g: 2, pl: 'Airbnb' },
-      {
-        id: 5,
-        start: '2026-07-20',
-        einde: '2026-08-07',
-        g: 4,
-        pl: 'Airbnb',
-        v: true,
-      },
-    ],
-    conc: null,
-    adresInfo: null,
-  },
-  {
-    id: 999999,
-    naam: 'Fictief Logies XYZ',
-    adres: 'Onbekende Straat 99, 3000 Leuven',
-    platform: 'Airbnb',
-    disc: 'Vakantiewoning',
-    units: null,
-    cap: null,
-    lat: 50.8778,
-    lon: 4.7052,
-    flags: { ov: false, un: false, ca: false, nk: true, ad: false },
-    periodes: null,
-    eersteOv: null,
-    nachtenOv: 0,
-    boekingen: [
-      { id: 11, start: '2026-03-01', einde: '2026-03-10', g: 3, pl: 'Airbnb' },
-      { id: 12, start: '2026-04-15', einde: '2026-04-22', g: 2, pl: 'Airbnb' },
-    ],
-    conc: null,
-    adresInfo: null,
-  },
-  {
-    id: 345678,
-    naam: 'Guesthouse Alizée',
-    adres: 'Naamsestraat 45, 3000 Leuven',
-    platform: 'Airbnb',
-    disc: 'B&B',
-    units: 2,
-    cap: 4,
-    lat: 50.8755,
-    lon: 4.6998,
-    flags: { ov: false, un: true, ca: false, nk: false, ad: false },
-    periodes: null,
-    eersteOv: null,
-    nachtenOv: 0,
-    boekingen: [
-      { id: 21, start: '2026-02-10', einde: '2026-02-17', g: 2, pl: 'Airbnb' },
-      { id: 22, start: '2026-02-12', einde: '2026-02-19', g: 2, pl: 'Airbnb' },
-      { id: 23, start: '2026-02-14', einde: '2026-02-20', g: 2, pl: 'Airbnb' },
-    ],
-    conc: {
-      type: 'units',
-      limiet: 2,
-      piek: 3,
-      events: [
-        { datum: '2026-02-14', w: 3 },
-        { datum: '2026-02-15', w: 3 },
-        { datum: '2026-02-16', w: 3 },
-        { datum: '2026-02-17', w: 3 },
-      ],
-    },
-    adresInfo: null,
-  },
-  {
-    id: 456789,
-    naam: 'Het Leuvens Hof',
-    adres: 'Tiensestraat 22, 3001 Leuven',
-    platform: 'Booking.com',
-    disc: 'Vakantiewoning',
-    units: 2,
-    cap: 4,
-    lat: 50.8765,
-    lon: 4.7135,
-    flags: { ov: false, un: false, ca: true, nk: false, ad: false },
-    periodes: null,
-    eersteOv: null,
-    nachtenOv: 0,
-    boekingen: [
-      {
-        id: 31,
-        start: '2026-05-20',
-        einde: '2026-05-27',
-        g: 5,
-        pl: 'Booking.com',
-        v: true,
-      },
-      {
-        id: 32,
-        start: '2026-05-22',
-        einde: '2026-05-29',
-        g: 4,
-        pl: 'Booking.com',
-      },
-    ],
-    conc: {
-      type: 'cap',
-      limiet: 4,
-      piek: 9,
-      events: [
-        { datum: '2026-05-22', w: 9 },
-        { datum: '2026-05-23', w: 9 },
-        { datum: '2026-05-24', w: 9 },
-        { datum: '2026-05-25', w: 9 },
-        { datum: '2026-05-26', w: 9 },
-      ],
-    },
-    adresInfo: null,
-  },
-  {
-    id: 567890,
-    naam: 'Akuta City Flat',
-    adres: 'Bondgenotenlaan 88, 3000 Leuven',
-    platform: 'Airbnb',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.8808,
-    lon: 4.7015,
-    flags: { ov: true, un: false, ca: false, nk: false, ad: false },
-    periodes: [
-      {
-        nr: 1,
-        start: '2026-01-01',
-        einde: '2026-01-31',
-        n: 4,
-        note: 'Gedeeltelijk — boeking gestart 28 dec 2025',
-      },
-      { nr: 2, start: '2026-02-10', einde: '2026-03-12', n: 22 },
-      { nr: 3, start: '2026-03-25', einde: '2026-04-24', n: 28 },
-      { nr: 4, start: '2026-05-08', einde: '2026-06-07', n: 20 },
-      { nr: 5, start: '2026-06-20', einde: '2026-07-06', n: 16, v: true },
-    ],
-    eersteOv: '2026-06-20',
-    nachtenOv: 16,
-    boekingen: [
-      {
-        id: 41,
-        start: '2025-12-28',
-        einde: '2026-01-05',
-        g: 2,
-        pl: 'Airbnb',
-        note: 'Start 28 dec 2025',
-      },
-      { id: 42, start: '2026-02-10', einde: '2026-03-04', g: 2, pl: 'Airbnb' },
-      { id: 43, start: '2026-03-25', einde: '2026-04-22', g: 3, pl: 'Airbnb' },
-      { id: 44, start: '2026-05-08', einde: '2026-05-28', g: 2, pl: 'Airbnb' },
-      {
-        id: 45,
-        start: '2026-06-20',
-        einde: '2026-07-06',
-        g: 4,
-        pl: 'Airbnb',
-        v: true,
-      },
-    ],
-    conc: null,
-    adresInfo: null,
-  },
-  {
-    id: 678901,
-    naam: 'B&B Vaartstraat',
-    adres: 'Vaartstraat 7, 3000 Leuven',
-    platform: 'Airbnb',
-    disc: 'B&B',
-    units: 2,
-    cap: 6,
-    lat: 50.8842,
-    lon: 4.6965,
-    flags: { ov: false, un: false, ca: false, nk: false, ad: false },
-    periodes: [
-      { nr: 1, start: '2026-01-15', einde: '2026-02-14', n: 20 },
-      { nr: 2, start: '2026-03-01', einde: '2026-03-31', n: 25 },
-      { nr: 3, start: '2026-05-05', einde: '2026-06-04', n: 18 },
-      { nr: 4, start: '2026-07-10', einde: '2026-08-09', n: 22 },
-    ],
-    eersteOv: null,
-    nachtenOv: 0,
-    boekingen: [
-      { id: 51, start: '2026-01-15', einde: '2026-02-04', g: 3, pl: 'Airbnb' },
-      { id: 52, start: '2026-03-01', einde: '2026-03-26', g: 4, pl: 'Airbnb' },
-      { id: 53, start: '2026-05-05', einde: '2026-05-23', g: 2, pl: 'Airbnb' },
-      { id: 54, start: '2026-07-10', einde: '2026-08-01', g: 5, pl: 'Airbnb' },
-    ],
-    conc: null,
-    adresInfo: null,
-  },
-  {
-    id: 789012,
-    naam: 'Art Studio Leuven',
-    adres: 'Mechelsestraat 33, 3010 Leuven',
-    platform: 'VRBO',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 10,
-    lat: 50.8922,
-    lon: 4.6938,
-    flags: { ov: true, un: false, ca: false, nk: false, ad: false },
-    periodes: [
-      { nr: 1, start: '2026-01-10', einde: '2026-02-09', n: 30 },
-      { nr: 2, start: '2026-02-09', einde: '2026-03-11', n: 30 },
-      { nr: 3, start: '2026-03-11', einde: '2026-04-10', n: 30 },
-      { nr: 4, start: '2026-04-10', einde: '2026-05-10', n: 30 },
-      { nr: 5, start: '2026-05-10', einde: '2026-09-15', n: 128, v: true },
-    ],
-    eersteOv: '2026-05-10',
-    nachtenOv: 128,
-    boekingen: [
-      { id: 61, start: '2026-01-10', einde: '2026-09-15', g: 8, pl: 'VRBO' },
-    ],
-    conc: null,
-    adresInfo: null,
-  },
-  {
-    id: 890123,
-    naam: 'Borchpoorte',
-    adres: 'Brusselsestraat 12, 3000 Leuven',
-    platform: 'Airbnb',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8795,
-    lon: 4.6988,
-    flags: { ov: true, un: false, ca: false, nk: false, ad: false },
-    periodes: [
-      { nr: 1, start: '2026-01-01', einde: '2026-01-31', n: 17 },
-      { nr: 2, start: '2026-02-05', einde: '2026-03-07', n: 15 },
-      { nr: 3, start: '2026-03-10', einde: '2026-04-09', n: 15 },
-      { nr: 4, start: '2026-04-15', einde: '2026-05-15', n: 15 },
-      { nr: 5, start: '2026-05-20', einde: '2026-06-05', n: 16, v: true },
-    ],
-    eersteOv: '2026-05-20',
-    nachtenOv: 16,
-    boekingen: [
-      { id: 71, start: '2026-01-01', einde: '2026-01-08', g: 2, pl: 'Airbnb' },
-      { id: 72, start: '2026-01-10', einde: '2026-01-20', g: 2, pl: 'Airbnb' },
-      { id: 73, start: '2026-02-05', einde: '2026-02-20', g: 2, pl: 'Airbnb' },
-      { id: 74, start: '2026-03-10', einde: '2026-03-25', g: 3, pl: 'Airbnb' },
-      { id: 75, start: '2026-04-15', einde: '2026-04-30', g: 2, pl: 'Airbnb' },
-      {
-        id: 76,
-        start: '2026-05-20',
-        einde: '2026-06-05',
-        g: 3,
-        pl: 'Airbnb',
-        v: true,
-      },
-    ],
-    conc: null,
-    adresInfo: null,
-  },
-  {
-    id: 901234,
-    naam: 'Leuven Garden Suite',
-    adres: 'Parkstraat 5, 3000 Leuven',
-    platform: 'Airbnb',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.8748,
-    lon: 4.7022,
-    flags: { ov: false, un: false, ca: false, nk: false, ad: true },
-    periodes: null,
-    eersteOv: null,
-    nachtenOv: 0,
-    boekingen: [
-      { id: 81, start: '2026-06-01', einde: '2026-06-08', g: 3, pl: 'Airbnb' },
-      { id: 82, start: '2026-07-15', einde: '2026-07-22', g: 2, pl: 'Airbnb' },
-    ],
-    conc: null,
-    adresInfo: {
-      basisregister: 'Parkstraat 5, 3000 Leuven',
-      boekingsdata: 'Parkstraat 5 bus 2, 3000 Leuven',
-    },
-  },
-];
 // ─── Basisregister logies (233 Leuvense BASE-entries, pre-processed from CSV) ─
-const BASISREGISTER = [
-  {
-    id: 406910,
-    naam: 't Foche',
-    adres: 'RECTOR DE SOMERPLEIN 14B bus 01, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8789787,
-    lon: 4.703032,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 406394,
-    naam: 'A Plus Studio',
-    adres: 'SPAARSTRAAT 71, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.880013,
-    lon: 4.722355,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 414474,
-    naam: 'Airbnb Christine',
-    adres: 'SINT-BARBARASTRAAT 3 bus 0408, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8779259,
-    lon: 4.6981091,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 413022,
-    naam: 'Airbnb Kurt',
-    adres: 'KOPERSLAGERIJ 20, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.883267,
-    lon: 4.723037,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 398740,
-    naam: 'Akuta City Flat Leuven',
-    adres: 'IJZERENMOLENSTRAAT 6, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.87265,
-    lon: 4.687884,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 412013,
-    naam: 'Allies Avenue',
-    adres: 'BONDGENOTENLAAN 17C bus 0101, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8796349,
-    lon: 4.7043734,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 304270,
-    naam: 'Ambassador Suites Leuven 001',
-    adres: 'SINT-MAARTENSTRAAT 12 bus D001, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 5,
-    lat: 50.880987,
-    lon: 4.706006,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 304271,
-    naam: 'Ambassador Suites Leuven 002',
-    adres: 'SINT-MAARTENSTRAAT 12 bus 002, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.880987,
-    lon: 4.706006,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 304272,
-    naam: 'Ambassador Suites Leuven 003',
-    adres: 'Sint-Maartenstraat 12 bus 003, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 5,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211074,
-    naam: 'Ambassador Suites Leuven 101',
-    adres: 'Sint-Maartenstraat 12D bus 101, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 6,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300051,
-    naam: 'Ambassador Suites Leuven 102',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 102, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300052,
-    naam: 'Ambassador Suites Leuven 103',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 103, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 5,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302412,
-    naam: 'Ambassador Suites Leuven 104',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 104, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 7,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300053,
-    naam: 'Ambassador Suites Leuven 201',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 201, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300054,
-    naam: 'Ambassador Suites Leuven 202',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 202, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300055,
-    naam: 'Ambassador Suites Leuven 203',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 203, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300060,
-    naam: 'Ambassador Suites Leuven 204',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 204, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 5,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300056,
-    naam: 'Ambassador Suites Leuven 301',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 301, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300057,
-    naam: 'Ambassador Suites Leuven 302',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 302, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211075,
-    naam: 'Ambassador Suites Leuven 303',
-    adres: 'Sint-Maartenstraat 12D bus 303, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298717,
-    naam: 'Ambassador Suites Leuven 304',
-    adres: 'Sint-Maartenstraat 12D bus 304, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 5,
-    lat: 50.8810807,
-    lon: 4.7068514,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302913,
-    naam: 'Ambassador Suites Leuven 401',
-    adres: 'Sint-Maartenstraat 12D bus 401, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300058,
-    naam: 'Ambassador Suites Leuven 402',
-    adres: 'SINT-MAARTENSTRAAT 12D bus 402, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 276919,
-    naam: 'Ambassador Suites Leuven 403',
-    adres: 'Sint-Maartenstraat 12D bus 403, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298716,
-    naam: 'Ambassador Suites Leuven 404',
-    adres: 'Sint-Maartenstraat 12D bus 404, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 5,
-    lat: 50.8810015,
-    lon: 4.706159,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 410852,
-    naam: 'Design studio met terras',
-    adres: 'BRUSSELSESTRAAT 278A bus 302, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 1,
-    lat: 50.882207,
-    lon: 4.687234,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 410853,
-    naam: 'Design studio with terrace',
-    adres: 'BRUSSELSESTRAAT 278A bus 302, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 1,
-    lat: 50.882207,
-    lon: 4.687234,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 403058,
-    naam: 'Art Studio Leuven',
-    adres: 'NAAMSESTRAAT 151, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 10,
-    lat: 50.870379,
-    lon: 4.699317,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 395852,
-    naam: 'Auberge des Chevaliers',
-    adres: 'RIDDERSSTRAAT 225, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 3,
-    lat: 50.8865509,
-    lon: 4.6941366,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 346109,
-    naam: 'B&B Daya',
-    adres: 'Oude Diestsesteenweg 1, 3010 Kessel-Lo',
-    disc: 'B&B',
-    units: 4,
-    cap: 8,
-    lat: 50.8834188,
-    lon: 4.7174506,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211058,
-    naam: 'B&B LODGING AT 8',
-    adres: 'WELDADIGHEIDSSTRAAT 8, 3000 Leuven',
-    disc: 'B&B',
-    units: 3,
-    cap: 7,
-    lat: 50.8692793,
-    lon: 4.7059545,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 324941,
-    naam: 'B&B Vaartstraat Leuven',
-    adres: 'VAARTSTRAAT 77, 3000 Leuven',
-    disc: 'B&B',
-    units: 2,
-    cap: 6,
-    lat: 50.8835886,
-    lon: 4.7008334,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 379030,
-    naam: 'Bed & Breakfast & Bert',
-    adres: 'Holsbeeksesteenweg 117, 3010 Kessel-Lo',
-    disc: 'B&B',
-    units: 1,
-    cap: 3,
-    lat: 50.89716,
-    lon: 4.731633,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211048,
-    naam: 'Begijnhof Hotel',
-    adres: 'TERVUURSEVEST 70, 3000 Leuven',
-    disc: 'Hotel',
-    units: 73,
-    cap: 150,
-    lat: 50.871006,
-    lon: 4.6954484,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 410970,
-    naam: 'Beulen',
-    adres: 'GEMEENTESTRAAT 150, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 4,
-    lat: 50.888532,
-    lon: 4.725113,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 409710,
-    naam: 'Big studio close to Leuven',
-    adres: 'SCHOOLBERGENSTRAAT 52, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.897249,
-    lon: 4.734939,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 409746,
-    naam: 'Bij Marie, Jenske & Django',
-    adres: 'HENRICUS WITTEBOLSSTRAAT 9, 3018 Wijgmaal',
-    disc: 'B&B',
-    units: 2,
-    cap: 4,
-    lat: 50.926538,
-    lon: 4.701634,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 394749,
-    naam: 'Bloom',
-    adres: 'RIDDERSSTRAAT 203, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.886254,
-    lon: 4.6935252,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 261434,
-    naam: 'Boardhousing',
-    adres: 'Lodewijk Engelbertus Van Arenbergplein 1, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 14,
-    cap: 28,
-    lat: 50.86361,
-    lon: 4.695135,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 413533,
-    naam: 'Borchpoorte',
-    adres: 'MECHELSEVEST 104 bus 2, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.888558,
-    lon: 4.692346,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 400582,
-    naam: 'Bosbis',
-    adres: 'SMOKKELWEG 37, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.907899,
-    lon: 4.743745,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 411843,
-    naam: 'Appart 2 rooms',
-    adres: 'VANDEN TYMPLESTRAAT 39 bus 401, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.882897,
-    lon: 4.711016,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 413838,
-    naam: 'Briefstreet - Louvain',
-    adres: 'KORTESTRAAT 7, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8788719,
-    lon: 4.7003002,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 413839,
-    naam: 'Briefstreet - Louvain',
-    adres: 'KORTESTRAAT 7, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8788719,
-    lon: 4.7003002,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 378846,
-    naam: 'Bright studio with coffee & vinyl in city centre',
-    adres: 'Pieter Coutereelstraat 43, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 4,
-    lat: 50.8823186,
-    lon: 4.6949393,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 298700,
-    naam: 'Budget Flats Leuven 126',
-    adres: 'BIERBEEKSTRAAT 75 bus 126, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298701,
-    naam: 'Budget Flats Leuven 119',
-    adres: 'BIERBEEKSTRAAT 75 bus 119, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298702,
-    naam: 'Budget Flats Leuven 129',
-    adres: 'BIERBEEKSTRAAT 75 bus 129, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298703,
-    naam: 'Budget Flats Leuven 108',
-    adres: 'Bierbeekstraat 75 bus 108, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298704,
-    naam: 'Budget Flats Leuven 111',
-    adres: 'Bierbeekstraat 75 bus 111, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298705,
-    naam: 'Budget Flats Leuven 112',
-    adres: 'Bierbeekstraat 75 bus 112, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298706,
-    naam: 'Budget Flats Leuven 135',
-    adres: 'BIERBEEKSTRAAT 75 bus 135, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298707,
-    naam: 'Budget Flats Leuven 006',
-    adres: 'bierbeekstraat 75 bus 006, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298708,
-    naam: 'Budget Flats Leuven 007',
-    adres: 'bierbeekstraat 75 bus 007, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298709,
-    naam: 'Budget Flats Leuven 008',
-    adres: 'BIERBEEKSTRAAT 75 bus 008, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298710,
-    naam: 'Budget Flats Leuven 127',
-    adres: 'Bierbeekstraat 75 bus 127, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298711,
-    naam: 'Budget Flats Leuven 109',
-    adres: 'BIERBEEKSTRAAT 75 bus 109, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298712,
-    naam: 'Budget Flats Leuven 110',
-    adres: 'BIERBEEKSTRAAT 75 bus 110, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 298713,
-    naam: 'Budget Flats Leuven 038',
-    adres: 'BIERBEEKSTRAAT 75 bus 038, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 299135,
-    naam: 'Budget Flats Leuven 030',
-    adres: 'Bierbeekstraat 75 bus 030, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 299136,
-    naam: 'Budget Flats Leuven 015',
-    adres: 'Bierbeekstraat 75 bus 015, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 299137,
-    naam: 'Budget Flats Leuven 004',
-    adres: 'Bierbeekstraat 75 bus 004, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 299138,
-    naam: 'Budget Flats Leuven 002',
-    adres: 'Bierbeekstraat 75 bus 002, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8718669,
-    lon: 4.7168457,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300061,
-    naam: 'Budget Flats Leuven 137',
-    adres: 'BIERBEEKSTRAAT 75 bus 137, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300062,
-    naam: 'Budget Flats Leuven 009',
-    adres: 'BIERBEEKSTRAAT 75 bus 009, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300063,
-    naam: 'Budget Flats Leuven 010',
-    adres: 'BIERBEEKSTRAAT 75 bus 010, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300064,
-    naam: 'Budget Flats Leuven 011',
-    adres: 'BIERBEEKSTRAAT 75 bus 011, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300065,
-    naam: 'Budget Flats Leuven 012',
-    adres: 'BIERBEEKSTRAAT 75 bus 012, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300066,
-    naam: 'Budget Flats Leuven 018',
-    adres: 'BIERBEEKSTRAAT 75 bus 018, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300067,
-    naam: 'Budget Flats Leuven 019',
-    adres: 'BIERBEEKSTRAAT 75 bus 019, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300068,
-    naam: 'Budget Flats Leuven 020',
-    adres: 'BIERBEEKSTRAAT 75 bus 020, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300069,
-    naam: 'Budget Flats Leuven 021',
-    adres: 'BIERBEEKSTRAAT 75 bus 021, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300070,
-    naam: 'Budget Flats Leuven 022',
-    adres: 'BIERBEEKSTRAAT 75 bus 022, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300071,
-    naam: 'Budget Flats Leuven 023',
-    adres: 'BIERBEEKSTRAAT 75 bus 023, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300072,
-    naam: 'Budget Flats Leuven 024',
-    adres: 'BIERBEEKSTRAAT 75 bus 024, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300073,
-    naam: 'Budget Flats Leuven 025',
-    adres: 'BIERBEEKSTRAAT 75 bus 025, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300074,
-    naam: 'Budget Flats Leuven 026',
-    adres: 'Bierbeekstraat 75 bus 026, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300075,
-    naam: 'Budget Flats Leuven 027',
-    adres: 'Bierbeekstraat 75 bus 027, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300076,
-    naam: 'Budget Flats Leuven 028',
-    adres: 'BIERBEEKSTRAAT 75 bus 028, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300077,
-    naam: 'Budget Flats Leuven 039',
-    adres: 'BIERBEEKSTRAAT 75 bus 039, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300078,
-    naam: 'Budget Flats Leuven 146',
-    adres: 'BIERBEEKSTRAAT 75 bus 146, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300079,
-    naam: 'Budget Flats Leuven 037',
-    adres: 'BIERBEEKSTRAAT 75 bus 037, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300080,
-    naam: 'Budget Flats Leuven 036',
-    adres: 'BIERBEEKSTRAAT 75 bus 036, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300081,
-    naam: 'Budget Flats Leuven 044',
-    adres: 'Bierbeekstraat 75 bus 044, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300082,
-    naam: 'Budget Flats Leuven 102',
-    adres: 'BIERBEEKSTRAAT 75 bus 102, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300083,
-    naam: 'Budget Flats Leuven 107',
-    adres: 'BIERBEEKSTRAAT 75 bus 107, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 5,
-    lat: 50.8719102,
-    lon: 4.7170318,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300084,
-    naam: 'Budget Flats Leuven 113',
-    adres: 'BIERBEEKSTRAAT 75 bus 113, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300085,
-    naam: 'Budget Flats Leuven 114',
-    adres: 'BIERBEEKSTRAAT 75 bus 114, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300086,
-    naam: 'Budget Flats Leuven 115',
-    adres: 'BIERBEEKSTRAAT 75 bus 115, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300087,
-    naam: 'Budget Flats Leuven 116',
-    adres: 'BIERBEEKSTRAAT 75 bus 116, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300088,
-    naam: 'Budget Flats Leuven 117',
-    adres: 'BIERBEEKSTRAAT 75 bus 117, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300089,
-    naam: 'Budget Flats Leuven 118',
-    adres: 'BIERBEEKSTRAAT 75 bus 118, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300090,
-    naam: 'Budget Flats Leuven 120',
-    adres: 'BIERBEEKSTRAAT 75 bus 120, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300091,
-    naam: 'Budget Flats Leuven 121',
-    adres: 'BIERBEEKSTRAAT 75 bus 121, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300092,
-    naam: 'Budget Flats Leuven 122',
-    adres: 'BIERBEEKSTRAAT 75 bus 122, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300093,
-    naam: 'Budget Flats Leuven 123',
-    adres: 'BIERBEEKSTRAAT 75 bus 123, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300094,
-    naam: 'Budget Flats Leuven 124',
-    adres: 'BIERBEEKSTRAAT 75 bus 124, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300095,
-    naam: 'Budget Flats Leuven 128',
-    adres: 'BIERBEEKSTRAAT 75 bus 128, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 5,
-    lat: 50.8719102,
-    lon: 4.7170318,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300096,
-    naam: 'Budget Flats Leuven 130',
-    adres: 'BIERBEEKSTRAAT 75 bus 130, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300097,
-    naam: 'Budget Flats Leuven 131',
-    adres: 'BIERBEEKSTRAAT 75 bus 131, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 300098,
-    naam: 'Budget Flats Leuven 132',
-    adres: 'BIERBEEKSTRAAT 75 bus 132, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301895,
-    naam: 'Budget Flats Leuven 003',
-    adres: 'BIERBEEKSTRAAT 75 bus 003, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301896,
-    naam: 'Budget Flats Leuven 005',
-    adres: 'BIERBEEKSTRAAT 75 bus 005, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301897,
-    naam: 'Budget Flats Leuven 105',
-    adres: 'BIERBEEKSTRAAT 75 bus 105, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301898,
-    naam: 'Budget Flats Leuven 014',
-    adres: 'BIERBEEKSTRAAT 75 bus 014, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301899,
-    naam: 'Budget Flats Leuven 016',
-    adres: 'BIERBEEKSTRAAT 75 bus 016, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301902,
-    naam: 'Budget Flats Leuven 138',
-    adres: 'BIERBEEKSTRAAT 75 bus 138, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301903,
-    naam: 'Budget Flats Leuven 031',
-    adres: 'BIERBEEKSTRAAT 75 bus 031, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301904,
-    naam: 'Budget Flats Leuven 032',
-    adres: 'BIERBEEKSTRAAT 75 bus 032, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301905,
-    naam: 'Budget Flats Leuven 033',
-    adres: 'BIERBEEKSTRAAT 75 bus 033, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301906,
-    naam: 'Budget Flats Leuven 034',
-    adres: 'BIERBEEKSTRAAT 75 bus 034, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301907,
-    naam: 'Budget Flats Leuven 029',
-    adres: 'BIERBEEKSTRAAT 75 bus 029, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301908,
-    naam: 'Budget Flats Leuven 040',
-    adres: 'BIERBEEKSTRAAT 75 bus 040, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301909,
-    naam: 'Budget Flats Leuven 041',
-    adres: 'BIERBEEKSTRAAT 75 bus 041, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301910,
-    naam: 'Budget Flats Leuven 103',
-    adres: 'BIERBEEKSTRAAT 75 bus 103, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301911,
-    naam: 'Budget Flats Leuven 104',
-    adres: 'BIERBEEKSTRAAT 75 bus 104, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301912,
-    naam: 'Budget Flats Leuven 106',
-    adres: 'BIERBEEKSTRAAT 75 bus 106, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301913,
-    naam: 'Budget Flats Leuven 125',
-    adres: 'BIERBEEKSTRAAT 75 bus 125, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301914,
-    naam: 'Budget Flats Leuven 134',
-    adres: 'BIERBEEKSTRAAT 75 bus 134, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301915,
-    naam: 'Budget Flats Leuven 136',
-    adres: 'BIERBEEKSTRAAT 75 bus 136, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301916,
-    naam: 'Budget Flats Leuven 139',
-    adres: 'BIERBEEKSTRAAT 75 bus 139, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301917,
-    naam: 'Budget Flats Leuven 140',
-    adres: 'BIERBEEKSTRAAT 75 bus 140, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 4,
-    lat: 50.8719102,
-    lon: 4.7170318,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301918,
-    naam: 'Budget Flats Leuven 141',
-    adres: 'BIERBEEKSTRAAT 75 bus 141, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301919,
-    naam: 'Budget Flats Leuven 142',
-    adres: 'BIERBEEKSTRAAT 75 bus 142, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301920,
-    naam: 'Budget Flats Leuven 143',
-    adres: 'BIERBEEKSTRAAT 75 bus 143, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301921,
-    naam: 'Budget Flats Leuven 144',
-    adres: 'BIERBEEKSTRAAT 75 bus 144, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301922,
-    naam: 'Budget Flats Leuven 145',
-    adres: 'BIERBEEKSTRAAT 75 bus 145, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 301923,
-    naam: 'Budget Flats Leuven 147',
-    adres: 'BIERBEEKSTRAAT 75 bus 147, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302915,
-    naam: 'Budget Flats Leuven 042',
-    adres: 'Bierbeekstraat 75 bus 042, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302916,
-    naam: 'Budget Flats Leuven 043',
-    adres: 'Bierbeekstraat 75 bus 043, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302917,
-    naam: 'Budget Flats Leuven 045',
-    adres: 'BIERBEEKSTRAAT 75 bus 045, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302918,
-    naam: 'Budget Flats Leuven 046',
-    adres: 'BIERBEEKSTRAAT 75 bus 046, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302919,
-    naam: 'Budget Flats Leuven 035',
-    adres: 'BIERBEEKSTRAAT 75 bus 035, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 5,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 302920,
-    naam: 'Budget Flats Leuven 101',
-    adres: 'BIERBEEKSTRAAT 75 bus 101, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 357074,
-    naam: 'Budget Flats Leuven 133',
-    adres: 'Bierbeekstraat 75 bus 133, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211800,
-    naam: 'Budget Flats Leuven 013',
-    adres: 'BIERBEEKSTRAAT 75 bus 013, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211801,
-    naam: 'Budget Flats Leuven 001',
-    adres: 'BIERBEEKSTRAAT 75 bus 001, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8717,
-    lon: 4.716866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 381419,
-    naam: 'Camperterrein Kessel-Lo',
-    adres: 'EENMEILAAN 199, 3010 Kessel-Lo',
-    disc: 'Camping',
-    units: 8,
-    cap: 32,
-    lat: 50.8963861,
-    lon: 4.7164717,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 391406,
-    naam: 'Casa Frambosia',
-    adres: 'DOMEINSTRAAT 41, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 5,
-    lat: 50.8991821,
-    lon: 4.7224498,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 357683,
-    naam: 'Chiro Spirit Heverlee',
-    adres: 'Huttelaan 30, 3001 Heverlee',
-    disc: 'Jeugdverblijf',
-    units: 1,
-    cap: 20,
-    lat: 50.8528826,
-    lon: 4.6901767,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 384576,
-    naam: 'De Hoorn lofts - kort verblijf',
-    adres: 'SLUISSTRAAT 79, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 9,
-    cap: 22,
-    lat: 50.8872221,
-    lon: 4.6998602,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211325,
-    naam: 'De Pastorij',
-    adres: 'SINT-MICHIELSSTRAAT 5, 3000 Leuven',
-    disc: 'Hotel',
-    units: 6,
-    cap: 14,
-    lat: 50.87663,
-    lon: 4.701195,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 414002,
-    naam: 'De Schoolbergen',
-    adres: 'SCHOOLBERGENSTRAAT 212, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 4,
-    lat: 50.894617,
-    lon: 4.748476,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 335475,
-    naam: 'De Vaartkom',
-    adres: 'VAARTKOM 1A bus 0502, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8881575,
-    lon: 4.7008611,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211200,
-    naam: 'Domus Damiano (Damiaanscoutslokaal)',
-    adres: 'SCOUTS- EN GIDSENPAD 1, 3012 Wilsele',
-    disc: 'Jeugdverblijf',
-    units: 1,
-    cap: 100,
-    lat: 50.9262756,
-    lon: 4.7286022,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 405902,
-    naam: 'Duplex appartement',
-    adres: 'MECHELSEVEST 48 bus 205, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.885412,
-    lon: 4.686271,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 401069,
-    naam: 'Faces of Leuven',
-    adres: 'LEOPOLD DECOUXLAAN 19, 3012 Wilsele',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.89124,
-    lon: 4.695142,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 240726,
-    naam: 'Gastenverblijf Bastien - Stout',
-    adres: 'MOLSTRAAT 17, 3000 Leuven',
-    disc: 'B&B',
-    units: 1,
-    cap: 4,
-    lat: 50.8668786,
-    lon: 4.7365074,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 378695,
-    naam: 'Getaway Leuven',
-    adres: 'Vital Decosterstraat 23, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 50,
-    cap: 169,
-    lat: 50.8800316,
-    lon: 4.7051951,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 250770,
-    naam: 'Guest House Feliz',
-    adres: 'VITAL DECOSTERSTRAAT 74, 3000 Leuven',
-    disc: 'B&B',
-    units: 2,
-    cap: 5,
-    lat: 50.8822806,
-    lon: 4.7032936,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 378248,
-    naam: 'Guest House Platte Lo',
-    adres: 'PLATTE LOSTRAAT 11, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8727336,
-    lon: 4.7211992,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 210800,
-    naam: 'Guesthouse Alizée',
-    adres: 'SINT-MAARTENSTRAAT 41, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 4,
-    lat: 50.882352,
-    lon: 4.704561,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 210783,
-    naam: 'Guesthouse Begijnhof',
-    adres: 'SCHAPENSTRAAT 97, 3000 Leuven',
-    disc: 'Hotel',
-    units: 4,
-    cap: 7,
-    lat: 50.8716387,
-    lon: 4.6982567,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211153,
-    naam: 'Guesthouse Nena',
-    adres: 'PLATTE LOSTRAAT 568 bus A, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 4,
-    lat: 50.8829058,
-    lon: 4.7463196,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 405857,
-    naam: 'Handbooghof',
-    adres: 'BROUWERSSTRAAT 1 bus 403, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.882309,
-    lon: 4.6965599,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211255,
-    naam: 'Het Leuvens Hof',
-    adres: 'SCHAPENSTRAAT 103, 3000 Leuven',
-    disc: 'B&B',
-    units: 2,
-    cap: 4,
-    lat: 50.8712921,
-    lon: 4.6981334,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 381993,
-    naam: 'Het Witte Huis (Appartement)',
-    adres: 'TROLIEBERG 107, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.8751816,
-    lon: 4.7541313,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 381994,
-    naam: 'Het Witte Huis (Studio)',
-    adres: 'TROLIEBERG 107, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8751816,
-    lon: 4.7541313,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 413246,
-    naam: 'Hoegaardsestraat 206',
-    adres: 'HOEGAARDSESTRAAT 206, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 1,
-    lat: 50.863192,
-    lon: 4.727325,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 410425,
-    naam: 'Home Arnalsteen',
-    adres: 'PARKSTRAAT 235, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 1,
-    lat: 50.8695,
-    lon: 4.707473,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 210807,
-    naam: 'Hotel Industrie',
-    adres: 'MARTELARENPLEIN 7, 3000 Leuven',
-    disc: 'Hotel',
-    units: 16,
-    cap: 33,
-    lat: 50.8811607,
-    lon: 4.7138977,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 299061,
-    naam: 'Hotel Ladeuze',
-    adres: 'BOGAARDENSTRAAT 27, 3000 Leuven',
-    disc: 'Hotel',
-    units: 16,
-    cap: 31,
-    lat: 50.878448,
-    lon: 4.708813,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211838,
-    naam: 'Hotel Malon',
-    adres: 'MARTELARENPLEIN 15, 3000 Leuven',
-    disc: 'Hotel',
-    units: 13,
-    cap: 23,
-    lat: 50.8816081,
-    lon: 4.7142499,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 210831,
-    naam: 'Hotel Mille Colonnes',
-    adres: 'MARTELARENPLEIN 5, 3000 Leuven',
-    disc: 'Hotel',
-    units: 14,
-    cap: 24,
-    lat: 50.8807045,
-    lon: 4.7139836,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211837,
-    naam: 'Hotel The Shepherd',
-    adres: 'SCHAPENSTRAAT 1, 3000 Leuven',
-    disc: 'Hotel',
-    units: 35,
-    cap: 72,
-    lat: 50.8758163,
-    lon: 4.6978438,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211327,
-    naam: 'Huize Rafaël',
-    adres: 'BRUSSELSESTRAAT 146 bus a, 3000 Leuven',
-    disc: 'Hotel',
-    units: 7,
-    cap: 18,
-    lat: 50.880686,
-    lon: 4.693034,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 399119,
-    naam: 'IJzerenmolenstraat 112',
-    adres: 'IJZERENMOLENSTRAAT 112, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 4,
-    lat: 50.868968,
-    lon: 4.682144,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 210785,
-    naam: 'Ibis Budget Leuven Centrum',
-    adres: 'Martelarenlaan 10, 3010 Kessel-Lo',
-    disc: 'Hotel',
-    units: 139,
-    cap: 349,
-    lat: 50.8824156,
-    lon: 4.7168142,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 210766,
-    naam: 'Ibis Heverlee',
-    adres: 'SINT-JANBERGSESTEENWEG 405, 3001 Heverlee',
-    disc: 'Hotel',
-    units: 48,
-    cap: 100,
-    lat: 50.855587,
-    lon: 4.6534892,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 210804,
-    naam: 'Ibis Leuven Centrum',
-    adres: 'Brusselsestraat 52, 3000 Leuven',
-    disc: 'Hotel',
-    units: 75,
-    cap: 141,
-    lat: 50.880122,
-    lon: 4.697351,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 357495,
-    naam: 'Irish College Leuven',
-    adres: 'Janseniusstraat 1, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 59,
-    cap: 136,
-    lat: 50.8757602,
-    lon: 4.6964084,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211311,
-    naam: 'Jeugdherberg De Blauwput',
-    adres: 'MARTELARENLAAN 11 bus A, 3010 Kessel-Lo',
-    disc: 'Hostel',
-    units: 116,
-    cap: 116,
-    lat: 50.8827301,
-    lon: 4.717306,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 395216,
-    naam: 'KC Homes',
-    adres: 'PANORAMALAAN 28, 3012 Wilsele',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8925198,
-    lon: 4.7031298,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 409591,
-    naam: 'Kamer met uitzicht en terras voor student',
-    adres: 'MARTELARENLAAN 200 bus Residentie Woods, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 1,
-    lat: 50.87343,
-    lon: 4.719773,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 409594,
-    naam: 'Knus & stijlvol verblijf in Leuven',
-    adres: 'NAAMSESTEENWEG 72, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.866705,
-    lon: 4.696848,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 399534,
-    naam: "Kokoon in 't groen",
-    adres: 'VERBRANDENBOS 24, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 6,
-    lat: 50.907083,
-    lon: 4.741738,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211323,
-    naam: 'La Royale',
-    adres: 'MARTELARENPLEIN 6, 3000 Leuven',
-    disc: 'Hotel',
-    units: 36,
-    cap: 75,
-    lat: 50.8808762,
-    lon: 4.7140417,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211848,
-    naam: 'B&B Lavan',
-    adres: 'CELESTIJNENLAAN 62, 3001 Heverlee',
-    disc: 'B&B',
-    units: 8,
-    cap: 17,
-    lat: 50.868537,
-    lon: 4.6773749,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 385276,
-    naam: 'Leuven Boslucht',
-    adres: 'LINDELAAN 14, 3001 Heverlee',
-    disc: 'B&B',
-    units: 3,
-    cap: 6,
-    lat: 50.8534903,
-    lon: 4.6805179,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211043,
-    naam: 'Leuven City Hostel',
-    adres: 'Ravenstraat 37, 3000 Leuven',
-    disc: 'Hostel',
-    units: 9,
-    cap: 33,
-    lat: 50.8785426,
-    lon: 4.7089394,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 345724,
-    naam: 'Leuvenatel',
-    adres: 'J.B. VAN MONSSTRAAT 9, 3000 Leuven',
-    disc: 'Hotel',
-    units: 2,
-    cap: 4,
-    lat: 50.8827295,
-    lon: 4.7074153,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 394644,
-    naam: 'Leuview',
-    adres: 'MECHELSESTRAAT 20 bus 0401, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.8805531,
-    lon: 4.7004113,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 210830,
-    naam: 'LivingLei',
-    adres: 'LEI 15, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 4,
-    lat: 50.8812433,
-    lon: 4.6963192,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 407837,
-    naam: 'Logie Nel',
-    adres: 'KARDINAAL MERCIERLAAN 15 bus 202, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.867808,
-    lon: 4.697109,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 299101,
-    naam: 'Logies Vitale',
-    adres: 'VITAL DECOSTERSTRAAT 96, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 3,
-    cap: 6,
-    lat: 50.882794,
-    lon: 4.702066,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 405664,
-    naam: 'Losbergenlaan 13',
-    adres: 'LOSBERGENLAAN 13, 3010 Kessel-Lo',
-    disc: 'B&B',
-    units: 1,
-    cap: 2,
-    lat: 50.875131,
-    lon: 4.739449,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 395850,
-    naam: 'M-Street art lodging',
-    adres: 'MUNTSTRAAT 32, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 15,
-    cap: 30,
-    lat: 50.878067,
-    lon: 4.702788,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 395671,
-    naam: 'Mozaïek',
-    adres: 'DIESTSESTEENWEG 115 bus 0201, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 1,
-    lat: 50.8840027,
-    lon: 4.7206302,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 413424,
-    naam: 'Marine Cellier',
-    adres: 'SCHAPENSTRAAT 66 bus 301, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 1,
-    lat: 50.873722,
-    lon: 4.698107,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211049,
-    naam: "Martin's Klooster",
-    adres: 'ONZE-LIEVE-VROUWSTRAAT 18, 3000 Leuven',
-    disc: 'Hotel',
-    units: 135,
-    cap: 284,
-    lat: 50.879095,
-    lon: 4.696604,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 410146,
-    naam: 'Cozy Studio in Leuven Center',
-    adres: 'BOTTELARIJ 12, 3000 Leuven',
-    disc: 'B&B',
-    units: 1,
-    cap: 2,
-    lat: 50.885601,
-    lon: 4.6991215,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 210767,
-    naam: 'Novotel Leuven',
-    adres: 'VUURKRUISENLAAN 4, 3000 Leuven',
-    disc: 'Hotel',
-    units: 139,
-    cap: 417,
-    lat: 50.8858854,
-    lon: 4.7104389,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 382872,
-    naam: 'Nr. 22',
-    adres: 'LANGENDAALLAAN 22, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 4,
-    lat: 50.8613013,
-    lon: 4.7092636,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 345898,
-    naam: 'Ooostel2.be Leuven',
-    adres: 'DIESTSEVEST 89, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 9,
-    cap: 18,
-    lat: 50.8845218,
-    lon: 4.7112485,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 210776,
-    naam: 'Park Bed and Breakfast',
-    adres: 'ABDIJSTRAAT 56, 3001 Heverlee',
-    disc: 'B&B',
-    units: 1,
-    cap: 2,
-    lat: 50.8614703,
-    lon: 4.7166268,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211145,
-    naam: 'Park Inn by Radisson Leuven',
-    adres: 'MARTELARENLAAN 36, 3010 Kessel-Lo',
-    disc: 'Hotel',
-    units: 133,
-    cap: 272,
-    lat: 50.8809959,
-    lon: 4.7176849,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211839,
-    naam: 'Pentahotel Leuven',
-    adres: 'ALFONS SMETSPLEIN 7, 3000 Leuven',
-    disc: 'Hotel',
-    units: 103,
-    cap: 279,
-    lat: 50.877061,
-    lon: 4.703771,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 412822,
-    naam: 'Pico Bello',
-    adres: 'VERBRANDENBOS 21, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.906986,
-    lon: 4.740882,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 378075,
-    naam: 'Private Floor in Leuven',
-    adres: 'Cardenberch 14, 3000 Leuven',
-    disc: 'B&B',
-    units: 1,
-    cap: 2,
-    lat: 50.8811196,
-    lon: 4.6845732,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211509,
-    naam: 'Professor',
-    adres: 'NAAMSESTRAAT 20, 3000 Leuven',
-    disc: 'Hotel',
-    units: 8,
-    cap: 16,
-    lat: 50.8783159,
-    lon: 4.7006045,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 345700,
-    naam: 'Quiet charming room in the city center',
-    adres: 'KARDINAALSTRAAT 12, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8852085,
-    lon: 4.7028464,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 409663,
-    naam: 'Rest N Go',
-    adres: 'NAAMSESTRAAT 142 bus 0201, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.870921,
-    lon: 4.699411,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 314665,
-    naam: 'Romantiek & wellness @ Isabellina',
-    adres: 'Henricus Bosmanslaan 1, 3012 Wilsele',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.9106897,
-    lon: 4.7113302,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 405439,
-    naam: "Roxy's Fishmarket",
-    adres: 'VISMARKT 14, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.881954,
-    lon: 4.700197,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 397206,
-    naam: 'Ruimte voor Rust',
-    adres: 'WERKHUIZENSTRAAT 54, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.88208,
-    lon: 4.720396,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 412028,
-    naam: 'Schipvaartstraat 24/407',
-    adres: 'SCHIPVAARTSTRAAT 24 bus 407, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8863602,
-    lon: 4.705595,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 413852,
-    naam: 'Schreursvest 47',
-    adres: 'LÉON SCHREURSVEST 47, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 4,
-    lat: 50.871899,
-    lon: 4.713081,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 346267,
-    naam: 'Scouts Boven-Lo',
-    adres: 'Heidebergstraat 266, 3010 Kessel-Lo',
-    disc: 'Jeugdverblijf',
-    units: 1,
-    cap: 45,
-    lat: 50.8768456,
-    lon: 4.7544822,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 383222,
-    naam: 'Scouts Sint-Maarten-Wilsele',
-    adres: 'ALBERT WOUTERSSTRAAT 28-30, 3012 Wilsele',
-    disc: 'Jeugdverblijf',
-    units: 1,
-    cap: 45,
-    lat: 50.895221,
-    lon: 4.70044,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211324,
-    naam: 'Scouts Vlierbeek',
-    adres: 'Sneppenstraat 13, 3010 Kessel-Lo',
-    disc: 'Jeugdverblijf',
-    units: 1,
-    cap: 60,
-    lat: 50.8991771,
-    lon: 4.7352814,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 405449,
-    naam: 'Smiling Fox Room',
-    adres: 'HOGESCHOOLPLEIN 7, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.877315,
-    lon: 4.701345,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 210790,
-    naam: 'Stilleuven 1',
-    adres: 'Graaf de Grunnelaan 6, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8542661,
-    lon: 4.6944811,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 210791,
-    naam: 'Stilleuven 2',
-    adres: 'Graaf de Grunnelaan 6, 3001 Heverlee',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8542661,
-    lon: 4.6944811,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 384125,
-    naam: 'Studi0102',
-    adres: 'VITAL DECOSTERSTRAAT 75 bus 0102, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.88246,
-    lon: 4.7023543,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 383631,
-    naam: 'Studio',
-    adres: 'PAUL VAN OSTAIJENLAAN 13, 3001 Heverlee',
-    disc: 'B&B',
-    units: 1,
-    cap: 2,
-    lat: 50.8671762,
-    lon: 4.7088921,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 391340,
-    naam: 'Study-o Leuven',
-    adres: 'CONSTANTIN MEUNIERSTRAAT 90 bus 0101, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.8689356,
-    lon: 4.6999342,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 383959,
-    naam: 'The Dragonfly',
-    adres: 'TERVUURSESTEENWEG 232A, 3001 Heverlee',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.873844,
-    lon: 4.6684626,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 404039,
-    naam: 'The Heart of Leuven',
-    adres: 'VISMARKT 12, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 8,
-    lat: 50.881914,
-    lon: 4.700226,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211037,
-    naam: 'The Lodge Heverlee',
-    adres: 'KANTINEPLEIN 3, 3001 Heverlee',
-    disc: 'Hotel',
-    units: 33,
-    cap: 80,
-    lat: 50.8608308,
-    lon: 4.6853866,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 385829,
-    naam: 'The Mayor Guesthouse',
-    adres: 'BURGEMEESTERSSTRAAT 3, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 3,
-    lat: 50.8752367,
-    lon: 4.7102708,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 406136,
-    naam: 'The Nest in Leuven',
-    adres: 'LEUVENSESTRAAT 27, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 2,
-    cap: 4,
-    lat: 50.884486,
-    lon: 4.717712,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 386703,
-    naam: 'The New Quarter',
-    adres: 'WELDADIGHEIDSSTRAAT 62 bus 0001, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 4,
-    lat: 50.8706055,
-    lon: 4.7041063,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 211038,
-    naam: 'Theaterhotel',
-    adres: 'BONDGENOTENLAAN 20, 3000 Leuven',
-    disc: 'Hotel',
-    units: 21,
-    cap: 47,
-    lat: 50.8793453,
-    lon: 4.7047254,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 299418,
-    naam: 'Trumpet House',
-    adres: 'KOESTAART 1, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 9,
-    lat: 50.906068,
-    lon: 4.738475,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211405,
-    naam: 'Verblijfcentrum Heiberg',
-    adres: 'Kapellekensweg 2, 3010 Kessel-Lo',
-    disc: 'Jeugdverblijf',
-    units: 1,
-    cap: 44,
-    lat: 50.8792085,
-    lon: 4.7517779,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 381408,
-    naam: 'Vermeulen',
-    adres: 'SPAARSTRAAT 104, 3010 Kessel-Lo',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 2,
-    lat: 50.8794918,
-    lon: 4.724873,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 409154,
-    naam: 'Vest 72',
-    adres: 'TIENSEVEST 72, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 6,
-    lat: 50.878463,
-    lon: 4.715709,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 382711,
-    naam: 'Visit Leuven',
-    adres: 'TIENSESTEENWEG 98 bus 1, 3000 Leuven',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 2,
-    lat: 50.8723661,
-    lon: 4.7193526,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 405047,
-    naam: 'Volkswasserij',
-    adres: 'PASTOOR BELLONSTRAAT 1, 3018 Wijgmaal',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.9269,
-    lon: 4.705073,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 211951,
-    naam: "Vormingscentrum 't Kasteeltje",
-    adres: 'Remylaan 13, 3018 Wijgmaal',
-    disc: 'Jeugdverblijf',
-    units: 1,
-    cap: 48,
-    lat: 50.9228568,
-    lon: 4.7035523,
-    status: 'ACKNOWLEDGED',
-  },
-  {
-    id: 345969,
-    naam: 'Wannes Suite',
-    adres: 'LINDENSESTRAAT 55, 3010 Kessel-Lo',
-    disc: 'B&B',
-    units: 2,
-    cap: 5,
-    lat: 50.885028,
-    lon: 4.7253083,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 409664,
-    naam: 'Goed gelegen kamer',
-    adres: 'NAAMSEVEST 6, 3000 Leuven',
-    disc: 'Kamergerelateerde logies',
-    units: 1,
-    cap: 1,
-    lat: 50.868654,
-    lon: 4.699046,
-    status: 'NOTIFIED',
-  },
-  {
-    id: 393885,
-    naam: 'het T-huisje',
-    adres: 'PELLENBERGSTRAAT 154, 3010 Kessel-Lo',
-    disc: 'Vakantiewoning',
-    units: 1,
-    cap: 4,
-    lat: 50.8677156,
-    lon: 4.7479417,
-    status: 'ACKNOWLEDGED',
-  },
-];
 
 // ─── Leuven municipal boundary (GeoJSON MultiPolygon) ────────────────────────
-const LEUVEN_BOUNDARY = {
-  type: 'MultiPolygon',
-  coordinates: [
-    [
-      [
-        [4.6464313, 50.8482232],
-        [4.6465929, 50.8481505],
-        [4.6468185, 50.8484369],
-        [4.6479215, 50.8481109],
-        [4.6482571, 50.8485139],
-        [4.6483453, 50.8487507],
-        [4.6494067, 50.8482348],
-        [4.6497279, 50.8486164],
-        [4.6496351, 50.848744],
-        [4.6490061, 50.8491468],
-        [4.6489428, 50.8492929],
-        [4.6492187, 50.8494547],
-        [4.6495567, 50.8495144],
-        [4.6495036, 50.8496366],
-        [4.6502741, 50.8501231],
-        [4.6514593, 50.8507844],
-        [4.6527229, 50.8514734],
-        [4.6535859, 50.8522678],
-        [4.6540823, 50.8521502],
-        [4.654857, 50.8517472],
-        [4.6550227, 50.8515103],
-        [4.656125, 50.850738],
-        [4.6565429, 50.8505075],
-        [4.6565322, 50.8503584],
-        [4.6563724, 50.8502657],
-        [4.6564942, 50.8501445],
-        [4.656933, 50.84991],
-        [4.657439, 50.8495329],
-        [4.6568344, 50.8491823],
-        [4.6567865, 50.8490924],
-        [4.6568937, 50.8490339],
-        [4.6575676, 50.8491836],
-        [4.6582559, 50.8489802],
-        [4.6583981, 50.848865],
-        [4.6584641, 50.8487691],
-        [4.6584812, 50.8487442],
-        [4.6587127, 50.8484077],
-        [4.6589001, 50.8474846],
-        [4.6590462, 50.8474502],
-        [4.659467, 50.8473997],
-        [4.6597952, 50.8474011],
-        [4.6600002, 50.847402],
-        [4.6603517, 50.8482493],
-        [4.6605349, 50.8486315],
-        [4.6607075, 50.8488731],
-        [4.6609356, 50.8489771],
-        [4.6611813, 50.8490307],
-        [4.6613386, 50.8490398],
-        [4.6615813, 50.8490003],
-        [4.6617528, 50.8489249],
-        [4.6618375, 50.8488092],
-        [4.661846, 50.848608],
-        [4.6619446, 50.8484642],
-        [4.6623498, 50.8483435],
-        [4.6626208, 50.8483338],
-        [4.6628621, 50.848357],
-        [4.663123, 50.848348],
-        [4.664081, 50.8483297],
-        [4.6646971, 50.8484966],
-        [4.6648684, 50.8486924],
-        [4.665092, 50.8488923],
-        [4.6654309, 50.8493253],
-        [4.6659212, 50.8497118],
-        [4.6660607, 50.849882],
-        [4.6661693, 50.8500844],
-        [4.6662967, 50.8502444],
-        [4.66655, 50.8504244],
-        [4.6675794, 50.8516693],
-        [4.6678058, 50.852001],
-        [4.6679546, 50.8520884],
-        [4.6682079, 50.8521423],
-        [4.668609, 50.8521628],
-        [4.6692477, 50.8521809],
-        [4.6695189, 50.8522314],
-        [4.6698339, 50.851756],
-        [4.6698724, 50.8517113],
-        [4.6701064, 50.8517503],
-        [4.6702194, 50.8518353],
-        [4.6706016, 50.8519727],
-        [4.6710466, 50.8520379],
-        [4.671605, 50.8518037],
-        [4.6716739, 50.851913],
-        [4.6723706, 50.8516507],
-        [4.6738542, 50.8510332],
-        [4.6742318, 50.850876],
-        [4.6737703, 50.8503196],
-        [4.6738103, 50.8501115],
-        [4.6742008, 50.8498829],
-        [4.6742742, 50.8498485],
-        [4.6742254, 50.8497968],
-        [4.6739756, 50.8495554],
-        [4.6735159, 50.8491088],
-        [4.6757818, 50.8478967],
-        [4.676642, 50.8471643],
-        [4.6755533, 50.8456002],
-        [4.6748505, 50.8445908],
-        [4.6742958, 50.8434421],
-        [4.6741729, 50.8429555],
-        [4.6739574, 50.8417199],
-        [4.6745266, 50.8416486],
-        [4.6745988, 50.8417984],
-        [4.6748382, 50.8417706],
-        [4.675187, 50.8416598],
-        [4.6754973, 50.8415248],
-        [4.6757828, 50.8413694],
-        [4.6756482, 50.8411473],
-        [4.6756241, 50.8408628],
-        [4.6755004, 50.8405222],
-        [4.6753836, 50.8403959],
-        [4.6751922, 50.8404347],
-        [4.6751111, 50.8401864],
-        [4.6748459, 50.8402038],
-        [4.6748489, 50.8400803],
-        [4.6748891, 50.8399549],
-        [4.6749723, 50.8398008],
-        [4.6750742, 50.8395544],
-        [4.6750761, 50.8395002],
-        [4.6749515, 50.83941],
-        [4.6746759, 50.8393442],
-        [4.675245, 50.8382055],
-        [4.6727508, 50.8377507],
-        [4.672327, 50.8385063],
-        [4.6719754, 50.838422],
-        [4.6717039, 50.8381455],
-        [4.6714634, 50.8376103],
-        [4.6713862, 50.837238],
-        [4.6713862, 50.8366096],
-        [4.6711648, 50.8361301],
-        [4.6711372, 50.8360703],
-        [4.6711367, 50.8359727],
-        [4.6710563, 50.83575],
-        [4.6711475, 50.8356034],
-        [4.6711404, 50.8354874],
-        [4.6709061, 50.8355102],
-        [4.6701524, 50.8354459],
-        [4.6702972, 50.8352561],
-        [4.6703696, 50.8350715],
-        [4.6705413, 50.8348699],
-        [4.67078, 50.8346954],
-        [4.6709195, 50.8346531],
-        [4.6710536, 50.8345709],
-        [4.6710946, 50.8340694],
-        [4.671416, 50.833635],
-        [4.6702476, 50.8331619],
-        [4.67086, 50.8327883],
-        [4.6710457, 50.8328455],
-        [4.6714907, 50.8323439],
-        [4.6726818, 50.8328591],
-        [4.6728544, 50.8326984],
-        [4.6728363, 50.8325413],
-        [4.6726401, 50.8323975],
-        [4.6722418, 50.8320036],
-        [4.6725047, 50.8318478],
-        [4.67273, 50.831797],
-        [4.6727997, 50.8317123],
-        [4.6731967, 50.8315395],
-        [4.6739423, 50.8310753],
-        [4.6741385, 50.8308071],
-        [4.6742427, 50.8306009],
-        [4.6742748, 50.8304389],
-        [4.6742635, 50.8303209],
-        [4.6747509, 50.8301366],
-        [4.6749186, 50.8300712],
-        [4.6750689, 50.8299588],
-        [4.6752539, 50.8297183],
-        [4.6751279, 50.8295251],
-        [4.6750742, 50.8293489],
-        [4.6749321, 50.8291558],
-        [4.6747953, 50.8290813],
-        [4.6746345, 50.8291979],
-        [4.6744045, 50.8290523],
-        [4.6740992, 50.829027],
-        [4.6737963, 50.8288715],
-        [4.6735399, 50.8287113],
-        [4.6735384, 50.8285775],
-        [4.6738133, 50.8283574],
-        [4.6735159, 50.8282443],
-        [4.6732423, 50.8281647],
-        [4.6728425, 50.8280691],
-        [4.6726549, 50.8281308],
-        [4.6724675, 50.8282735],
-        [4.6710965, 50.8278784],
-        [4.6707439, 50.8277267],
-        [4.6702519, 50.8276126],
-        [4.669904, 50.8275782],
-        [4.6693256, 50.8274683],
-        [4.6692043, 50.8274271],
-        [4.6686551, 50.827325],
-        [4.6684273, 50.827348],
-        [4.6679087, 50.8270427],
-        [4.6676719, 50.8267857],
-        [4.667323, 50.8264173],
-        [4.6662875, 50.8262199],
-        [4.6656655, 50.8265371],
-        [4.6654719, 50.8267754],
-        [4.66515, 50.8272771],
-        [4.6649621, 50.8270908],
-        [4.6646798, 50.8268213],
-        [4.6644779, 50.8266217],
-        [4.6643076, 50.8264683],
-        [4.6640195, 50.8262383],
-        [4.6638116, 50.8260952],
-        [4.6635236, 50.8259271],
-        [4.6636553, 50.8256639],
-        [4.6637459, 50.8254327],
-        [4.6638274, 50.8252487],
-        [4.6639028, 50.8250913],
-        [4.6640791, 50.8248572],
-        [4.6642447, 50.8247379],
-        [4.6646109, 50.8245677],
-        [4.6650831, 50.8244902],
-        [4.6654639, 50.8244491],
-        [4.665661, 50.8244203],
-        [4.6658555, 50.8243831],
-        [4.66604, 50.8243305],
-        [4.6663513, 50.8242505],
-        [4.6664369, 50.8242096],
-        [4.6666398, 50.8242392],
-        [4.6667252, 50.8242621],
-        [4.66689, 50.8242917],
-        [4.6669682, 50.8243015],
-        [4.667131, 50.8243135],
-        [4.6673904, 50.8243463],
-        [4.6674839, 50.8243554],
-        [4.6676185, 50.8243753],
-        [4.6676885, 50.82438],
-        [4.6678808, 50.824386],
-        [4.6679731, 50.8243929],
-        [4.6681722, 50.8244361],
-        [4.6682876, 50.8244718],
-        [4.6683284, 50.8244845],
-        [4.6683491, 50.8244934],
-        [4.6683948, 50.8245345],
-        [4.6684516, 50.8245995],
-        [4.6685066, 50.8246632],
-        [4.6685537, 50.8247272],
-        [4.6686348, 50.8248033],
-        [4.6686748, 50.8248308],
-        [4.6687249, 50.8248549],
-        [4.6688316, 50.8248972],
-        [4.6688955, 50.8249057],
-        [4.6689637, 50.8249056],
-        [4.6690835, 50.8248908],
-        [4.6693094, 50.8248686],
-        [4.6694578, 50.8248608],
-        [4.6695848, 50.8248673],
-        [4.6697544, 50.8248888],
-        [4.6700308, 50.8249443],
-        [4.6701349, 50.8249634],
-        [4.6701808, 50.8249657],
-        [4.6703596, 50.8249482],
-        [4.6707349, 50.8249165],
-        [4.6708154, 50.8249189],
-        [4.670978, 50.8249313],
-        [4.671081, 50.8249472],
-        [4.6711812, 50.8249448],
-        [4.6712947, 50.8249198],
-        [4.6715549, 50.8248428],
-        [4.6717642, 50.8248135],
-        [4.6720603, 50.8247945],
-        [4.6723176, 50.8248529],
-        [4.6724522, 50.8248564],
-        [4.6725755, 50.8248536],
-        [4.6728811, 50.8248642],
-        [4.6730853, 50.8248812],
-        [4.6731689, 50.824891],
-        [4.6734429, 50.8249172],
-        [4.6734831, 50.8249177],
-        [4.6735802, 50.8249313],
-        [4.673666, 50.8249514],
-        [4.6739828, 50.8249789],
-        [4.674095, 50.8250265],
-        [4.6741757, 50.825048],
-        [4.6742705, 50.8250838],
-        [4.6742945, 50.8250983],
-        [4.6745168, 50.8251938],
-        [4.674611, 50.82523],
-        [4.6747825, 50.8252828],
-        [4.6748746, 50.8253063],
-        [4.6750464, 50.8253368],
-        [4.6751791, 50.8253199],
-        [4.6753072, 50.8252936],
-        [4.6753652, 50.8252905],
-        [4.6755268, 50.8252954],
-        [4.6756581, 50.82531],
-        [4.6757826, 50.825317],
-        [4.6758737, 50.8253164],
-        [4.6760489, 50.8253228],
-        [4.6761088, 50.8253275],
-        [4.676189, 50.8253461],
-        [4.6767211, 50.825409],
-        [4.6771475, 50.8254327],
-        [4.6778056, 50.8254481],
-        [4.6779761, 50.8254439],
-        [4.6784313, 50.8254063],
-        [4.678495, 50.825404],
-        [4.6785678, 50.8254014],
-        [4.678639, 50.8253986],
-        [4.678725, 50.8254042],
-        [4.6789125, 50.8254641],
-        [4.67896, 50.8254721],
-        [4.6790464, 50.8255085],
-        [4.6790863, 50.8255429],
-        [4.6792005, 50.8255911],
-        [4.6792447, 50.8256056],
-        [4.679334, 50.8256194],
-        [4.6794, 50.8256422],
-        [4.6794737, 50.8256757],
-        [4.6795763, 50.8257052],
-        [4.6797064, 50.8257123],
-        [4.6797631, 50.8257403],
-        [4.6799631, 50.8257451],
-        [4.6800489, 50.8257524],
-        [4.6801033, 50.8257612],
-        [4.6803841, 50.8258579],
-        [4.6806647, 50.825971],
-        [4.6807588, 50.8259952],
-        [4.6807789, 50.8260186],
-        [4.6812946, 50.826152],
-        [4.6814308, 50.8260661],
-        [4.6816603, 50.8260384],
-        [4.6819111, 50.8259914],
-        [4.6821614, 50.8259302],
-        [4.6829106, 50.8258611],
-        [4.6830217, 50.8258333],
-        [4.6831249, 50.8257766],
-        [4.6832778, 50.8257267],
-        [4.6833368, 50.8256962],
-        [4.68344, 50.825614],
-        [4.6835165, 50.825586],
-        [4.684238, 50.8255607],
-        [4.6842232, 50.8258759],
-        [4.6848603, 50.8259401],
-        [4.6852593, 50.8259876],
-        [4.6854376, 50.8260147],
-        [4.6855418, 50.8260113],
-        [4.6854826, 50.8261689],
-        [4.6848887, 50.8271143],
-        [4.6844238, 50.8276879],
-        [4.6843848, 50.8278829],
-        [4.6855809, 50.8283938],
-        [4.6857873, 50.8283695],
-        [4.6862791, 50.8285697],
-        [4.6862866, 50.8286394],
-        [4.6858905, 50.8289907],
-        [4.6857226, 50.829581],
-        [4.6856888, 50.830013],
-        [4.6859468, 50.8303313],
-        [4.6866484, 50.8308693],
-        [4.6878757, 50.8324678],
-        [4.6887931, 50.8328193],
-        [4.6891524, 50.8329438],
-        [4.6904183, 50.8325508],
-        [4.6910907, 50.8337118],
-        [4.6914572, 50.8348321],
-        [4.6923384, 50.8345753],
-        [4.6924537, 50.8345417],
-        [4.6940737, 50.8340696],
-        [4.6940892, 50.8340711],
-        [4.694189, 50.8340809],
-        [4.6942896, 50.8340907],
-        [4.6971575, 50.8333295],
-        [4.6972561, 50.8335029],
-        [4.6972775, 50.8336672],
-        [4.6973661, 50.833834],
-        [4.6974143, 50.8339484],
-        [4.6974815, 50.8342033],
-        [4.6975994, 50.8343431],
-        [4.6987227, 50.8348839],
-        [4.6990094, 50.8351354],
-        [4.6990793, 50.8352201],
-        [4.699104, 50.8352512],
-        [4.6991645, 50.8353955],
-        [4.6991491, 50.8356102],
-        [4.6991046, 50.8359025],
-        [4.6991255, 50.8362838],
-        [4.6992536, 50.8366026],
-        [4.6996831, 50.8374371],
-        [4.6998646, 50.8377803],
-        [4.6999946, 50.8380358],
-        [4.7002265, 50.8382654],
-        [4.7004909, 50.8385236],
-        [4.7005756, 50.8385693],
-        [4.7006564, 50.838613],
-        [4.7008462, 50.8387049],
-        [4.7014067, 50.8391668],
-        [4.701663, 50.8393545],
-        [4.7031007, 50.8405393],
-        [4.7042394, 50.8401484],
-        [4.7052013, 50.8410753],
-        [4.7067176, 50.8405943],
-        [4.7081415, 50.8402058],
-        [4.7089414, 50.84091],
-        [4.7062194, 50.8417243],
-        [4.7061071, 50.8417579],
-        [4.706048, 50.8417756],
-        [4.7050818, 50.8420723],
-        [4.7054293, 50.8423774],
-        [4.7060594, 50.8428683],
-        [4.7078669, 50.8443992],
-        [4.7097198, 50.8452061],
-        [4.710368, 50.8451661],
-        [4.7106917, 50.8451477],
-        [4.7103511, 50.8445366],
-        [4.7126833, 50.8440687],
-        [4.7131421, 50.8450114],
-        [4.7270169, 50.8442364],
-        [4.7281981, 50.8442674],
-        [4.7338941, 50.8438789],
-        [4.7385894, 50.8433145],
-        [4.7413125, 50.8428484],
-        [4.7423246, 50.842637],
-        [4.7417436, 50.8432662],
-        [4.740867, 50.8442221],
-        [4.740489, 50.8444605],
-        [4.7405085, 50.8446236],
-        [4.7403136, 50.844842],
-        [4.7400554, 50.845002],
-        [4.7400576, 50.8451502],
-        [4.7396661, 50.845825],
-        [4.7392594, 50.846758],
-        [4.7386472, 50.8486353],
-        [4.7380144, 50.8495842],
-        [4.7378642, 50.8499782],
-        [4.7374793, 50.8505599],
-        [4.7367616, 50.8524529],
-        [4.736249, 50.8524742],
-        [4.7361254, 50.8530827],
-        [4.7356284, 50.8545018],
-        [4.7348717, 50.8559448],
-        [4.7343944, 50.856538],
-        [4.7344704, 50.8571393],
-        [4.7347662, 50.857667],
-        [4.7350734, 50.8578668],
-        [4.7353238, 50.8580528],
-        [4.7356487, 50.8582151],
-        [4.7359973, 50.858553],
-        [4.7362224, 50.8584417],
-        [4.7378095, 50.8594503],
-        [4.7380782, 50.8596654],
-        [4.7394388, 50.8598471],
-        [4.7395927, 50.8598986],
-        [4.7397659, 50.8600146],
-        [4.7400777, 50.8602881],
-        [4.7403263, 50.8606342],
-        [4.7407547, 50.8608675],
-        [4.7408894, 50.8609409],
-        [4.7412456, 50.8611348],
-        [4.7427702, 50.8621121],
-        [4.7439336, 50.8636362],
-        [4.744504, 50.8635014],
-        [4.7459477, 50.8645023],
-        [4.7459838, 50.864532],
-        [4.7462603, 50.8647492],
-        [4.7467925, 50.8652716],
-        [4.7470097, 50.8654733],
-        [4.7470697, 50.865529],
-        [4.7472733, 50.8657418],
-        [4.7473959, 50.865867],
-        [4.7474759, 50.8659955],
-        [4.7482489, 50.8674544],
-        [4.7489894, 50.8673826],
-        [4.7497941, 50.8673456],
-        [4.7499261, 50.8676054],
-        [4.7500685, 50.8681064],
-        [4.7505365, 50.868917],
-        [4.7506104, 50.8690303],
-        [4.7506487, 50.869044],
-        [4.7520074, 50.8703176],
-        [4.7520028, 50.8706205],
-        [4.7520117, 50.8706664],
-        [4.7525863, 50.870856],
-        [4.7540364, 50.8718281],
-        [4.7540726, 50.8718259],
-        [4.754233, 50.8718573],
-        [4.7552112, 50.8720429],
-        [4.7560479, 50.8721074],
-        [4.7569209, 50.8721897],
-        [4.7573933, 50.8722797],
-        [4.7581066, 50.8725856],
-        [4.7587911, 50.8728048],
-        [4.760038, 50.8729675],
-        [4.7601568, 50.873019],
-        [4.7605684, 50.8734865],
-        [4.7606848, 50.8736285],
-        [4.7620725, 50.8752302],
-        [4.767419, 50.881401],
-        [4.7685085, 50.8828834],
-        [4.769547, 50.883987],
-        [4.7705305, 50.8853012],
-        [4.770356, 50.886272],
-        [4.7700429, 50.8875793],
-        [4.7700375, 50.8885844],
-        [4.7697921, 50.8896657],
-        [4.7656724, 50.8893406],
-        [4.7645568, 50.8892565],
-        [4.7591545, 50.8888213],
-        [4.7565387, 50.8886112],
-        [4.7538023, 50.8883885],
-        [4.7528184, 50.8882242],
-        [4.7518368, 50.8880518],
-        [4.7511536, 50.8879361],
-        [4.7511374, 50.8880195],
-        [4.7512504, 50.8889825],
-        [4.7514032, 50.8901652],
-        [4.7514916, 50.8908007],
-        [4.7515105, 50.8909296],
-        [4.7515788, 50.8913959],
-        [4.7516203, 50.892069],
-        [4.7516611, 50.8925059],
-        [4.7516665, 50.8925803],
-        [4.7516692, 50.8926183],
-        [4.7516577, 50.8926709],
-        [4.7516513, 50.8927],
-        [4.7516069, 50.8927734],
-        [4.7513151, 50.8931298],
-        [4.7512785, 50.89321],
-        [4.7512773, 50.8932479],
-        [4.7512889, 50.8933205],
-        [4.7512263, 50.8933281],
-        [4.7511753, 50.8933321],
-        [4.7510268, 50.8933305],
-        [4.7504995, 50.8933198],
-        [4.7498564, 50.893309],
-        [4.7486741, 50.8932854],
-        [4.7481336, 50.8932451],
-        [4.7479728, 50.8932618],
-        [4.7479359, 50.8932909],
-        [4.7480739, 50.8933799],
-        [4.7481721, 50.8934823],
-        [4.7482096, 50.8935492],
-        [4.7483174, 50.893741],
-        [4.74838, 50.8938091],
-        [4.7484459, 50.8938848],
-        [4.748589, 50.8940111],
-        [4.748863, 50.8942249],
-        [4.7490108, 50.8943225],
-        [4.7491365, 50.8943876],
-        [4.749196, 50.894405],
-        [4.7492934, 50.8944108],
-        [4.7493568, 50.8944116],
-        [4.7493886, 50.8944733],
-        [4.7494911, 50.8945596],
-        [4.7503177, 50.8948494],
-        [4.7505844, 50.8949371],
-        [4.7508449, 50.8950379],
-        [4.7510192, 50.8951344],
-        [4.7512224, 50.8952465],
-        [4.7513885, 50.8953405],
-        [4.751833, 50.8956027],
-        [4.7518614, 50.8956186],
-        [4.7520561, 50.8957278],
-        [4.7521267, 50.8957839],
-        [4.7523424, 50.8959523],
-        [4.752799, 50.8964035],
-        [4.7531616, 50.8967028],
-        [4.7535008, 50.8969536],
-        [4.7540044, 50.8973319],
-        [4.7541624, 50.897491],
-        [4.7545184, 50.8978497],
-        [4.7545944, 50.8979346],
-        [4.7546934, 50.8980412],
-        [4.7547675, 50.8981628],
-        [4.7548092, 50.8982184],
-        [4.7546858, 50.8983211],
-        [4.7545715, 50.8984645],
-        [4.7544871, 50.8986499],
-        [4.7544082, 50.898771],
-        [4.7543471, 50.8988621],
-        [4.7541948, 50.8990782],
-        [4.7540432, 50.8992681],
-        [4.753987, 50.8993715],
-        [4.7539268, 50.8995055],
-        [4.7538679, 50.8996519],
-        [4.7538016, 50.8998093],
-        [4.7537657, 50.899855],
-        [4.7536589, 50.8999062],
-        [4.753795, 50.9000279],
-        [4.7539379, 50.9001425],
-        [4.7540739, 50.9002329],
-        [4.7542886, 50.9003602],
-        [4.7546255, 50.9005524],
-        [4.7550176, 50.9007383],
-        [4.7559066, 50.9011458],
-        [4.7560201, 50.9012163],
-        [4.7561274, 50.9013143],
-        [4.7564123, 50.9016354],
-        [4.756492, 50.9017766],
-        [4.7565147, 50.901949],
-        [4.7567778, 50.9024997],
-        [4.756896, 50.9027219],
-        [4.7570628, 50.9029482],
-        [4.7574212, 50.9033452],
-        [4.7577167, 50.9037947],
-        [4.7578072, 50.9039162],
-        [4.7579039, 50.9040293],
-        [4.7581644, 50.9042619],
-        [4.7591233, 50.904959],
-        [4.7593261, 50.9051017],
-        [4.7595639, 50.9053866],
-        [4.759657, 50.9054807],
-        [4.7597906, 50.9060801],
-        [4.7598306, 50.9062579],
-        [4.759886, 50.9063852],
-        [4.760252, 50.9068824],
-        [4.760391, 50.907093],
-        [4.7604983, 50.9072804],
-        [4.7605198, 50.9073234],
-        [4.7606083, 50.9075724],
-        [4.7606282, 50.9078017],
-        [4.7604632, 50.9078203],
-        [4.7589427, 50.9079424],
-        [4.7574531, 50.908076],
-        [4.7564593, 50.9081599],
-        [4.7557143, 50.9082208],
-        [4.7534645, 50.9084181],
-        [4.7500223, 50.9087144],
-        [4.7488342, 50.9088283],
-        [4.7481201, 50.9088664],
-        [4.7455487, 50.9084888],
-        [4.7443848, 50.9083021],
-        [4.7426575, 50.9080655],
-        [4.7397132, 50.9076831],
-        [4.7375181, 50.9073689],
-        [4.7321331, 50.9066451],
-        [4.7300842, 50.9062856],
-        [4.7295921, 50.9061105],
-        [4.729172, 50.9060797],
-        [4.7250751, 50.9070534],
-        [4.7237283, 50.9074679],
-        [4.7223075, 50.9078107],
-        [4.7220748, 50.907918],
-        [4.7219753, 50.908366],
-        [4.7216301, 50.9085129],
-        [4.720976, 50.9085887],
-        [4.7204848, 50.9086971],
-        [4.7194611, 50.9080714],
-        [4.7193274, 50.9079368],
-        [4.7192485, 50.9078545],
-        [4.7191714, 50.9077698],
-        [4.7189563, 50.907532],
-        [4.7187698, 50.9073933],
-        [4.7187035, 50.9073609],
-        [4.7184327, 50.9072246],
-        [4.7183441, 50.9071997],
-        [4.7182453, 50.9071883],
-        [4.7179749, 50.9071817],
-        [4.7172236, 50.9079116],
-        [4.7175274, 50.9084996],
-        [4.7170867, 50.9086968],
-        [4.7157242, 50.9091649],
-        [4.715962, 50.9096766],
-        [4.7161819, 50.9102915],
-        [4.7160905, 50.9108158],
-        [4.7161482, 50.9109917],
-        [4.7160105, 50.911403],
-        [4.7160217, 50.9116571],
-        [4.7159916, 50.9119619],
-        [4.7160739, 50.9122475],
-        [4.716112, 50.9124228],
-        [4.7162048, 50.9130115],
-        [4.7162098, 50.9133488],
-        [4.7160203, 50.9137114],
-        [4.7157084, 50.9141405],
-        [4.7157487, 50.9142488],
-        [4.7156321, 50.9145221],
-        [4.7160615, 50.9146267],
-        [4.71648, 50.9146138],
-        [4.7167801, 50.9151485],
-        [4.7174096, 50.9157515],
-        [4.7177366, 50.9157649],
-        [4.7178279, 50.9158637],
-        [4.7185754, 50.9162628],
-        [4.7194826, 50.9167958],
-        [4.7204668, 50.9173674],
-        [4.722854, 50.917758],
-        [4.7238604, 50.9179459],
-        [4.7271864, 50.9189104],
-        [4.7297885, 50.9194877],
-        [4.7292134, 50.920225],
-        [4.7288842, 50.9209556],
-        [4.728367, 50.9221327],
-        [4.7283334, 50.9222045],
-        [4.7281423, 50.9226452],
-        [4.7313859, 50.9227723],
-        [4.7315721, 50.9222708],
-        [4.7328905, 50.922333],
-        [4.7338513, 50.9223985],
-        [4.7349822, 50.9225986],
-        [4.735977, 50.922912],
-        [4.738772, 50.923908],
-        [4.741527, 50.92456],
-        [4.742345, 50.924915],
-        [4.7428824, 50.9252419],
-        [4.744534, 50.925314],
-        [4.7453397, 50.925426],
-        [4.7461835, 50.925749],
-        [4.7468387, 50.9261126],
-        [4.7474254, 50.926544],
-        [4.7461999, 50.9277958],
-        [4.7474431, 50.9282371],
-        [4.7454806, 50.9303107],
-        [4.7452501, 50.9316494],
-        [4.7446863, 50.9327975],
-        [4.745475, 50.93301],
-        [4.7450761, 50.9343506],
-        [4.7454514, 50.934568],
-        [4.7455813, 50.9347174],
-        [4.7456622, 50.9350179],
-        [4.745299, 50.935012],
-        [4.745135, 50.9351178],
-        [4.7449957, 50.9351324],
-        [4.7447738, 50.9351268],
-        [4.7446548, 50.9351685],
-        [4.7446172, 50.9352789],
-        [4.7447278, 50.9354156],
-        [4.744715, 50.935478],
-        [4.7446229, 50.9355076],
-        [4.7444202, 50.9354779],
-        [4.7441528, 50.9355577],
-        [4.7439407, 50.9355447],
-        [4.7438473, 50.9355721],
-        [4.7436366, 50.9357236],
-        [4.743542, 50.935844],
-        [4.7434798, 50.9359746],
-        [4.743479, 50.9361066],
-        [4.7422982, 50.9352066],
-        [4.7419728, 50.9356858],
-        [4.7411485, 50.935432],
-        [4.7402345, 50.9364612],
-        [4.7379417, 50.9355356],
-        [4.7372707, 50.9354768],
-        [4.736983, 50.9360293],
-        [4.7367182, 50.9360135],
-        [4.7351183, 50.935874],
-        [4.7350371, 50.9359862],
-        [4.7349391, 50.9360977],
-        [4.7348267, 50.9362263],
-        [4.7347621, 50.9363502],
-        [4.7346795, 50.9366104],
-        [4.7345774, 50.9367659],
-        [4.7345225, 50.9369655],
-        [4.7344866, 50.9370359],
-        [4.7343633, 50.9371535],
-        [4.7343024, 50.9372632],
-        [4.7342532, 50.9373862],
-        [4.7341896, 50.9375626],
-        [4.7341076, 50.9378896],
-        [4.7340895, 50.9379684],
-        [4.7340657, 50.9380327],
-        [4.7340051, 50.9382414],
-        [4.7339889, 50.9382839],
-        [4.7339537, 50.9383843],
-        [4.7339015, 50.9384749],
-        [4.7338362, 50.9386172],
-        [4.7337918, 50.9388612],
-        [4.7337623, 50.9390229],
-        [4.7336694, 50.9393722],
-        [4.7336698, 50.9393767],
-        [4.7336438, 50.9393932],
-        [4.7336176, 50.9394018],
-        [4.7331543, 50.9394545],
-        [4.7331191, 50.9394639],
-        [4.7329316, 50.939379],
-        [4.7326733, 50.9392627],
-        [4.7324841, 50.9391776],
-        [4.7323222, 50.9391042],
-        [4.7321309, 50.9390183],
-        [4.7319372, 50.9389308],
-        [4.7318179, 50.93882],
-        [4.7312542, 50.9389994],
-        [4.7308181, 50.9383614],
-        [4.7306614, 50.9382467],
-        [4.7306008, 50.9382016],
-        [4.7305263, 50.9381471],
-        [4.7304214, 50.9380699],
-        [4.7302138, 50.9379176],
-        [4.7299944, 50.9380554],
-        [4.7299043, 50.9379923],
-        [4.7298532, 50.9379493],
-        [4.7298299, 50.9379287],
-        [4.7297981, 50.9379007],
-        [4.7297304, 50.9378357],
-        [4.7294729, 50.937592],
-        [4.7292675, 50.9374994],
-        [4.7292311, 50.9374831],
-        [4.7290698, 50.9374108],
-        [4.7287533, 50.9372693],
-        [4.7286722, 50.9372329],
-        [4.7283762, 50.9370367],
-        [4.7282752, 50.936929],
-        [4.728184, 50.9368309],
-        [4.7278904, 50.9366279],
-        [4.72773, 50.936557],
-        [4.7275312, 50.9365087],
-        [4.7272064, 50.9364304],
-        [4.7268525, 50.9363441],
-        [4.7265446, 50.9362697],
-        [4.7264917, 50.9362435],
-        [4.7262613, 50.9361293],
-        [4.7265333, 50.935904],
-        [4.7265861, 50.9358617],
-        [4.7266142, 50.9358412],
-        [4.7266308, 50.9358304],
-        [4.7260584, 50.9353903],
-        [4.7258985, 50.9354711],
-        [4.7258023, 50.9352972],
-        [4.7257389, 50.9352027],
-        [4.7256741, 50.9351163],
-        [4.7254945, 50.9349148],
-        [4.7254689, 50.9348896],
-        [4.7254255, 50.9348468],
-        [4.7253747, 50.934797],
-        [4.725323, 50.9347466],
-        [4.7252921, 50.9347157],
-        [4.7250439, 50.9344739],
-        [4.7248069, 50.9342409],
-        [4.7245279, 50.9340653],
-        [4.7240007, 50.9337581],
-        [4.7239162, 50.9337099],
-        [4.7238727, 50.9336846],
-        [4.7238205, 50.9336545],
-        [4.7236725, 50.9335691],
-        [4.7235673, 50.933487],
-        [4.7234627, 50.933404],
-        [4.72334, 50.9333067],
-        [4.7232549, 50.9332394],
-        [4.7232012, 50.9331972],
-        [4.723013, 50.9330484],
-        [4.7229173, 50.9329727],
-        [4.7228053, 50.9328838],
-        [4.7227048, 50.9328049],
-        [4.7226737, 50.9327811],
-        [4.722627, 50.9327482],
-        [4.7225721, 50.9327122],
-        [4.722492, 50.9326584],
-        [4.7223748, 50.9325808],
-        [4.7223052, 50.9325343],
-        [4.7221615, 50.9324661],
-        [4.7221217, 50.9324479],
-        [4.7220127, 50.9324108],
-        [4.7215472, 50.9322983],
-        [4.7212428, 50.9322252],
-        [4.7207553, 50.9321074],
-        [4.720745, 50.9321181],
-        [4.7204683, 50.9322219],
-        [4.7203818, 50.9322553],
-        [4.7202745, 50.9322963],
-        [4.7192047, 50.9326995],
-        [4.719117, 50.9325928],
-        [4.7190424, 50.9325027],
-        [4.7189558, 50.9323971],
-        [4.7188886, 50.9323157],
-        [4.7188174, 50.9322292],
-        [4.7187679, 50.9321684],
-        [4.7186975, 50.9320835],
-        [4.7186472, 50.9320223],
-        [4.718577, 50.9319678],
-        [4.7184336, 50.9318565],
-        [4.7183975, 50.9318285],
-        [4.7183462, 50.9317961],
-        [4.7182723, 50.9317647],
-        [4.7179987, 50.931647],
-        [4.7177892, 50.9315569],
-        [4.7176103, 50.9314804],
-        [4.7175321, 50.9314324],
-        [4.7174528, 50.9313842],
-        [4.7173708, 50.931334],
-        [4.7172981, 50.9312898],
-        [4.7171614, 50.9312465],
-        [4.7170774, 50.9312295],
-        [4.7170209, 50.9312203],
-        [4.7169519, 50.9312167],
-        [4.7166916, 50.9312266],
-        [4.7156328, 50.9305189],
-        [4.7154101, 50.930429],
-        [4.7151245, 50.9302751],
-        [4.7151197, 50.9302239],
-        [4.7151507, 50.9301663],
-        [4.7153579, 50.9298991],
-        [4.7151428, 50.9297793],
-        [4.7149364, 50.9297181],
-        [4.714597, 50.9296808],
-        [4.7144149, 50.9295151],
-        [4.7141728, 50.9291229],
-        [4.7140289, 50.9289927],
-        [4.7137001, 50.9288214],
-        [4.7133119, 50.9287338],
-        [4.7131445, 50.9287341],
-        [4.712933, 50.9287538],
-        [4.7126735, 50.9287805],
-        [4.712432, 50.9287421],
-        [4.7121568, 50.9286766],
-        [4.7117851, 50.9285949],
-        [4.711652, 50.9285495],
-        [4.7114847, 50.928508],
-        [4.7114328, 50.928425],
-        [4.7112708, 50.9284391],
-        [4.7111157, 50.9284842],
-        [4.7109796, 50.9285323],
-        [4.7111009, 50.9286464],
-        [4.7111539, 50.9287107],
-        [4.7111692, 50.9288085],
-        [4.7111368, 50.9289537],
-        [4.7110722, 50.9291083],
-        [4.7110059, 50.9292077],
-        [4.710943, 50.9294052],
-        [4.7109712, 50.9295479],
-        [4.7110209, 50.9296295],
-        [4.7111422, 50.9297244],
-        [4.7113986, 50.9298901],
-        [4.7116784, 50.9300885],
-        [4.7119296, 50.9303998],
-        [4.712648, 50.931537],
-        [4.713162, 50.932025],
-        [4.713538, 50.93251],
-        [4.7128063, 50.932601],
-        [4.7122314, 50.9326348],
-        [4.7120365, 50.9326839],
-        [4.711827, 50.9328036],
-        [4.711724, 50.933078],
-        [4.711621, 50.933338],
-        [4.711536, 50.933918],
-        [4.7115005, 50.9342469],
-        [4.71157, 50.934474],
-        [4.7116662, 50.9349255],
-        [4.7118026, 50.935119],
-        [4.7124214, 50.9353585],
-        [4.7124848, 50.9354813],
-        [4.7124799, 50.9356011],
-        [4.7119293, 50.9359081],
-        [4.7117831, 50.9369306],
-        [4.7114518, 50.9374864],
-        [4.711022, 50.937881],
-        [4.710714, 50.938419],
-        [4.7107697, 50.9390983],
-        [4.71068, 50.939189],
-        [4.7104627, 50.9393041],
-        [4.7097513, 50.9396234],
-        [4.7092787, 50.9398291],
-        [4.7083285, 50.9404646],
-        [4.7080508, 50.9405598],
-        [4.7075879, 50.9406028],
-        [4.7071007, 50.9407655],
-        [4.7068912, 50.9409068],
-        [4.7069155, 50.9410265],
-        [4.707013, 50.941094],
-        [4.7073394, 50.9413612],
-        [4.70751, 50.9415024],
-        [4.7075197, 50.941573],
-        [4.7073346, 50.9415914],
-        [4.7068035, 50.9415239],
-        [4.7065111, 50.941573],
-        [4.7062139, 50.9417634],
-        [4.7055512, 50.9421195],
-        [4.7050688, 50.9426261],
-        [4.70505, 50.942783],
-        [4.7049837, 50.9432423],
-        [4.7049053, 50.9434014],
-        [4.7047096, 50.9435537],
-        [4.7045616, 50.9436059],
-        [4.7040757, 50.9436475],
-        [4.7037802, 50.9436657],
-        [4.7033186, 50.9432818],
-        [4.7029232, 50.9426708],
-        [4.7025837, 50.9424627],
-        [4.7018806, 50.9421313],
-        [4.7013845, 50.9421609],
-        [4.7009998, 50.9420152],
-        [4.700864, 50.9419638],
-        [4.6996592, 50.9415638],
-        [4.6995274, 50.9416863],
-        [4.6985642, 50.9414805],
-        [4.6977359, 50.941385],
-        [4.6967392, 50.9411887],
-        [4.6954183, 50.9411333],
-        [4.6938166, 50.9409736],
-        [4.6933044, 50.9409447],
-        [4.6932577, 50.9410986],
-        [4.6932151, 50.9413535],
-        [4.6931814, 50.9415823],
-        [4.6931835, 50.9417537],
-        [4.6931438, 50.9417657],
-        [4.693023, 50.9418024],
-        [4.6929041, 50.9418842],
-        [4.6926057, 50.9420926],
-        [4.6920071, 50.9425034],
-        [4.6916187, 50.9427694],
-        [4.690979, 50.9432192],
-        [4.6903806, 50.9436067],
-        [4.6897756, 50.9439115],
-        [4.6894703, 50.9440707],
-        [4.6893623, 50.9440051],
-        [4.6887129, 50.9435924],
-        [4.6882423, 50.9433084],
-        [4.6878911, 50.9431137],
-        [4.6873669, 50.9429005],
-        [4.6867023, 50.9426518],
-        [4.6862151, 50.9424953],
-        [4.6846854, 50.9421006],
-        [4.6840626, 50.9419662],
-        [4.6823967, 50.9416007],
-        [4.6825544, 50.9413378],
-        [4.6820116, 50.9411436],
-        [4.6807956, 50.9407149],
-        [4.6803023, 50.9403679],
-        [4.6801984, 50.9402713],
-        [4.6801289, 50.9401908],
-        [4.6800802, 50.9401863],
-        [4.6800354, 50.9402093],
-        [4.6799803, 50.9402917],
-        [4.6799271, 50.9403134],
-        [4.6789655, 50.940359],
-        [4.6764405, 50.9394368],
-        [4.6764791, 50.9391864],
-        [4.6762189, 50.9387419],
-        [4.6760103, 50.9384824],
-        [4.6755345, 50.938214],
-        [4.6749217, 50.9376387],
-        [4.6748836, 50.9376233],
-        [4.6748525, 50.937598],
-        [4.6747414, 50.937524],
-        [4.6746679, 50.9374835],
-        [4.6745587, 50.9374429],
-        [4.6742071, 50.9373301],
-        [4.6738685, 50.9372177],
-        [4.6737215, 50.9371869],
-        [4.6735702, 50.9371691],
-        [4.6733224, 50.937148],
-        [4.6729686, 50.9371207],
-        [4.6728629, 50.9371066],
-        [4.6726049, 50.9370644],
-        [4.6723976, 50.9370059],
-        [4.6724507, 50.9366172],
-        [4.6715302, 50.9361503],
-        [4.6711728, 50.9359807],
-        [4.6785342, 50.9311607],
-        [4.685081, 50.926704],
-        [4.6920509, 50.9240477],
-        [4.6951668, 50.9228782],
-        [4.6965109, 50.9223719],
-        [4.698466, 50.92163],
-        [4.7005432, 50.9208271],
-        [4.7024714, 50.9200718],
-        [4.7024905, 50.9200628],
-        [4.7019696, 50.9199906],
-        [4.7011804, 50.9199136],
-        [4.6989629, 50.9199755],
-        [4.6974071, 50.9200139],
-        [4.6955507, 50.9195979],
-        [4.6950353, 50.9194823],
-        [4.6937696, 50.9188483],
-        [4.6943654, 50.918251],
-        [4.6954059, 50.9171454],
-        [4.6959712, 50.9165487],
-        [4.6954929, 50.9163885],
-        [4.6953057, 50.9163386],
-        [4.6947724, 50.9162191],
-        [4.694582, 50.9161668],
-        [4.6940908, 50.9159831],
-        [4.694352, 50.9154961],
-        [4.695023, 50.9142733],
-        [4.6943303, 50.9141331],
-        [4.6944945, 50.9137221],
-        [4.6947492, 50.9121701],
-        [4.6951257, 50.9110811],
-        [4.695217, 50.9107737],
-        [4.6932281, 50.9103788],
-        [4.6931359, 50.9102289],
-        [4.6928828, 50.9098726],
-        [4.692877, 50.9098644],
-        [4.6925504, 50.909499],
-        [4.69229, 50.9075675],
-        [4.692061, 50.9058193],
-        [4.6919678, 50.9054613],
-        [4.6919681, 50.9050308],
-        [4.6918757, 50.9047445],
-        [4.6917994, 50.9045327],
-        [4.6918389, 50.9044468],
-        [4.6915835, 50.9037333],
-        [4.6931474, 50.89935],
-        [4.6926986, 50.8991256],
-        [4.6919844, 50.8987853],
-        [4.6918313, 50.8986882],
-        [4.6916796, 50.8985773],
-        [4.6915917, 50.8984955],
-        [4.691493, 50.8983831],
-        [4.6913658, 50.8982069],
-        [4.6912367, 50.898061],
-        [4.691132, 50.8979649],
-        [4.691023, 50.8978804],
-        [4.690877, 50.8977904],
-        [4.6907205, 50.8977112],
-        [4.6905944, 50.897649],
-        [4.6903586, 50.8975505],
-        [4.6898209, 50.8973517],
-        [4.6893125, 50.8971556],
-        [4.6889009, 50.8969865],
-        [4.6888671, 50.8969721],
-        [4.6888327, 50.8969583],
-        [4.6887472, 50.8958236],
-        [4.6887938, 50.8950012],
-        [4.6885456, 50.8949378],
-        [4.688327, 50.894882],
-        [4.6880404, 50.8947918],
-        [4.6880368, 50.8947777],
-        [4.6884458, 50.8945124],
-        [4.6883667, 50.8944869],
-        [4.6873015, 50.8940836],
-        [4.6853283, 50.8933275],
-        [4.6835864, 50.8926308],
-        [4.6812463, 50.8917403],
-        [4.6798028, 50.8911308],
-        [4.6789082, 50.8906844],
-        [4.6781066, 50.8902137],
-        [4.6774913, 50.8898139],
-        [4.6770128, 50.8894553],
-        [4.6762899, 50.8888323],
-        [4.6754954, 50.8880588],
-        [4.6750332, 50.8875071],
-        [4.6742913, 50.8865322],
-        [4.6734361, 50.8855487],
-        [4.6731463, 50.8855644],
-        [4.6725209, 50.884997],
-        [4.6719209, 50.8841757],
-        [4.6716292, 50.8837399],
-        [4.6710862, 50.8832282],
-        [4.6708248, 50.8829631],
-        [4.6710372, 50.8822257],
-        [4.6711036, 50.8816264],
-        [4.6706352, 50.8813698],
-        [4.6705859, 50.881335],
-        [4.6699535, 50.8810714],
-        [4.6693417, 50.8807085],
-        [4.6687602, 50.8803455],
-        [4.6679975, 50.8798192],
-        [4.6678052, 50.8797149],
-        [4.6671601, 50.8795866],
-        [4.6659954, 50.8794292],
-        [4.6658333, 50.8794162],
-        [4.6656691, 50.8794013],
-        [4.6654893, 50.8793814],
-        [4.6652211, 50.8793628],
-        [4.6644668, 50.8793163],
-        [4.6635112, 50.8792731],
-        [4.6629573, 50.8792587],
-        [4.6625148, 50.8792553],
-        [4.6621366, 50.879202],
-        [4.6617302, 50.8791005],
-        [4.6615948, 50.879048],
-        [4.6614897, 50.8789966],
-        [4.6613239, 50.8790243],
-        [4.6611777, 50.8790286],
-        [4.6610282, 50.8790193],
-        [4.6599841, 50.8789363],
-        [4.6597699, 50.8789325],
-        [4.6593927, 50.8789533],
-        [4.6588965, 50.8789922],
-        [4.6586478, 50.8789952],
-        [4.65836, 50.8789786],
-        [4.6579926, 50.8789374],
-        [4.6576439, 50.8788813],
-        [4.6570728, 50.8787626],
-        [4.6567145, 50.8786783],
-        [4.6555732, 50.8784557],
-        [4.6553159, 50.8784565],
-        [4.6536489, 50.8787761],
-        [4.6530706, 50.8788748],
-        [4.6527115, 50.8789309],
-        [4.6524806, 50.8789495],
-        [4.6523251, 50.8789507],
-        [4.6520476, 50.8789305],
-        [4.6510347, 50.8786942],
-        [4.650452, 50.8785889],
-        [4.6502278, 50.8785484],
-        [4.6501992, 50.8785432],
-        [4.6494333, 50.8784551],
-        [4.6494377, 50.8783846],
-        [4.647686, 50.8780387],
-        [4.6475235, 50.8780225],
-        [4.6445619, 50.8768325],
-        [4.6452136, 50.8759733],
-        [4.6446754, 50.8758206],
-        [4.6443669, 50.8757283],
-        [4.6441617, 50.8756562],
-        [4.6441989, 50.8755843],
-        [4.6441304, 50.8754402],
-        [4.6441215, 50.8751351],
-        [4.644039, 50.8748398],
-        [4.6440504, 50.8747721],
-        [4.6441148, 50.8746621],
-        [4.6443411, 50.874459],
-        [4.6444971, 50.8743487],
-        [4.6445678, 50.8742655],
-        [4.6446855, 50.8740278],
-        [4.6449208, 50.8735526],
-        [4.6450341, 50.8732128],
-        [4.6450251, 50.8731132],
-        [4.6450204, 50.873062],
-        [4.6449839, 50.8730249],
-        [4.6449128, 50.8729957],
-        [4.6447746, 50.8729568],
-        [4.6442094, 50.8728155],
-        [4.6439638, 50.8727378],
-        [4.6437853, 50.8726303],
-        [4.6437654, 50.8725659],
-        [4.6439061, 50.8724141],
-        [4.6443951, 50.8721291],
-        [4.6450302, 50.8718196],
-        [4.6454291, 50.8714957],
-        [4.6459436, 50.8693191],
-        [4.6460435, 50.8689874],
-        [4.6467259, 50.8672004],
-        [4.6467072, 50.8671242],
-        [4.6467568, 50.8670569],
-        [4.6467415, 50.8669812],
-        [4.6478933, 50.8653167],
-        [4.6465148, 50.8650141],
-        [4.6469199, 50.8628922],
-        [4.6464471, 50.8611064],
-        [4.6460193, 50.8610403],
-        [4.6451247, 50.8606484],
-        [4.6444396, 50.8602833],
-        [4.6434778, 50.8598459],
-        [4.6430525, 50.859583],
-        [4.6415438, 50.8590831],
-        [4.640295, 50.8558584],
-        [4.6406462, 50.8555516],
-        [4.6408144, 50.8541501],
-        [4.6410673, 50.8528727],
-        [4.6414232, 50.8525821],
-        [4.6416572, 50.8523278],
-        [4.6419029, 50.852136],
-        [4.6426043, 50.852345],
-        [4.6442785, 50.8514375],
-        [4.6452832, 50.8508687],
-        [4.645781, 50.8505471],
-        [4.6460713, 50.850075],
-        [4.6459964, 50.8494381],
-        [4.6459637, 50.8489883],
-        [4.6469215, 50.8489883],
-        [4.6466886, 50.8486276],
-        [4.6464313, 50.8482232],
-      ],
-    ],
-  ],
+const LEUVEN_BOUNDARY = {"type":"MultiPolygon","coordinates":[[[[4.6464313,50.8482232],[4.6465929,50.8481505],[4.6468185,50.8484369],[4.6479215,50.8481109],[4.6482571,50.8485139],[4.6483453,50.8487507],[4.6494067,50.8482348],[4.6497279,50.8486164],[4.6496351,50.848744],[4.6490061,50.8491468],[4.6489428,50.8492929],[4.6492187,50.8494547],[4.6495567,50.8495144],[4.6495036,50.8496366],[4.6502741,50.8501231],[4.6514593,50.8507844],[4.6527229,50.8514734],[4.6535859,50.8522678],[4.6540823,50.8521502],[4.654857,50.8517472],[4.6550227,50.8515103],[4.656125,50.850738],[4.6565429,50.8505075],[4.6565322,50.8503584],[4.6563724,50.8502657],[4.6564942,50.8501445],[4.656933,50.84991],[4.657439,50.8495329],[4.6568344,50.8491823],[4.6567865,50.8490924],[4.6568937,50.8490339],[4.6575676,50.8491836],[4.6582559,50.8489802],[4.6583981,50.848865],[4.6584641,50.8487691],[4.6584812,50.8487442],[4.6587127,50.8484077],[4.6589001,50.8474846],[4.6590462,50.8474502],[4.659467,50.8473997],[4.6597952,50.8474011],[4.6600002,50.847402],[4.6603517,50.8482493],[4.6605349,50.8486315],[4.6607075,50.8488731],[4.6609356,50.8489771],[4.6611813,50.8490307],[4.6613386,50.8490398],[4.6615813,50.8490003],[4.6617528,50.8489249],[4.6618375,50.8488092],[4.661846,50.848608],[4.6619446,50.8484642],[4.6623498,50.8483435],[4.6626208,50.8483338],[4.6628621,50.848357],[4.663123,50.848348],[4.664081,50.8483297],[4.6646971,50.8484966],[4.6648684,50.8486924],[4.665092,50.8488923],[4.6654309,50.8493253],[4.6659212,50.8497118],[4.6660607,50.849882],[4.6661693,50.8500844],[4.6662967,50.8502444],[4.66655,50.8504244],[4.6675794,50.8516693],[4.6678058,50.852001],[4.6679546,50.8520884],[4.6682079,50.8521423],[4.668609,50.8521628],[4.6692477,50.8521809],[4.6695189,50.8522314],[4.6698339,50.851756],[4.6698724,50.8517113],[4.6701064,50.8517503],[4.6702194,50.8518353],[4.6706016,50.8519727],[4.6710466,50.8520379],[4.671605,50.8518037],[4.6716739,50.851913],[4.6723706,50.8516507],[4.6738542,50.8510332],[4.6742318,50.850876],[4.6737703,50.8503196],[4.6738103,50.8501115],[4.6742008,50.8498829],[4.6742742,50.8498485],[4.6742254,50.8497968],[4.6739756,50.8495554],[4.6735159,50.8491088],[4.6757818,50.8478967],[4.676642,50.8471643],[4.6755533,50.8456002],[4.6748505,50.8445908],[4.6742958,50.8434421],[4.6741729,50.8429555],[4.6739574,50.8417199],[4.6745266,50.8416486],[4.6745988,50.8417984],[4.6748382,50.8417706],[4.675187,50.8416598],[4.6754973,50.8415248],[4.6757828,50.8413694],[4.6756482,50.8411473],[4.6756241,50.8408628],[4.6755004,50.8405222],[4.6753836,50.8403959],[4.6751922,50.8404347],[4.6751111,50.8401864],[4.6748459,50.8402038],[4.6748489,50.8400803],[4.6748891,50.8399549],[4.6749723,50.8398008],[4.6750742,50.8395544],[4.6750761,50.8395002],[4.6749515,50.83941],[4.6746759,50.8393442],[4.675245,50.8382055],[4.6727508,50.8377507],[4.672327,50.8385063],[4.6719754,50.838422],[4.6717039,50.8381455],[4.6714634,50.8376103],[4.6713862,50.837238],[4.6713862,50.8366096],[4.6711648,50.8361301],[4.6711372,50.8360703],[4.6711367,50.8359727],[4.6710563,50.83575],[4.6711475,50.8356034],[4.6711404,50.8354874],[4.6709061,50.8355102],[4.6701524,50.8354459],[4.6702972,50.8352561],[4.6703696,50.8350715],[4.6705413,50.8348699],[4.67078,50.8346954],[4.6709195,50.8346531],[4.6710536,50.8345709],[4.6710946,50.8340694],[4.671416,50.833635],[4.6702476,50.8331619],[4.67086,50.8327883],[4.6710457,50.8328455],[4.6714907,50.8323439],[4.6726818,50.8328591],[4.6728544,50.8326984],[4.6728363,50.8325413],[4.6726401,50.8323975],[4.6722418,50.8320036],[4.6725047,50.8318478],[4.67273,50.831797],[4.6727997,50.8317123],[4.6731967,50.8315395],[4.6739423,50.8310753],[4.6741385,50.8308071],[4.6742427,50.8306009],[4.6742748,50.8304389],[4.6742635,50.8303209],[4.6747509,50.8301366],[4.6749186,50.8300712],[4.6750689,50.8299588],[4.6752539,50.8297183],[4.6751279,50.8295251],[4.6750742,50.8293489],[4.6749321,50.8291558],[4.6747953,50.8290813],[4.6746345,50.8291979],[4.6744045,50.8290523],[4.6740992,50.829027],[4.6737963,50.8288715],[4.6735399,50.8287113],[4.6735384,50.8285775],[4.6738133,50.8283574],[4.6735159,50.8282443],[4.6732423,50.8281647],[4.6728425,50.8280691],[4.6726549,50.8281308],[4.6724675,50.8282735],[4.6710965,50.8278784],[4.6707439,50.8277267],[4.6702519,50.8276126],[4.669904,50.8275782],[4.6693256,50.8274683],[4.6692043,50.8274271],[4.6686551,50.827325],[4.6684273,50.827348],[4.6679087,50.8270427],[4.6676719,50.8267857],[4.667323,50.8264173],[4.6662875,50.8262199],[4.6656655,50.8265371],[4.6654719,50.8267754],[4.66515,50.8272771],[4.6649621,50.8270908],[4.6646798,50.8268213],[4.6644779,50.8266217],[4.6643076,50.8264683],[4.6640195,50.8262383],[4.6638116,50.8260952],[4.6635236,50.8259271],[4.6636553,50.8256639],[4.6637459,50.8254327],[4.6638274,50.8252487],[4.6639028,50.8250913],[4.6640791,50.8248572],[4.6642447,50.8247379],[4.6646109,50.8245677],[4.6650831,50.8244902],[4.6654639,50.8244491],[4.665661,50.8244203],[4.6658555,50.8243831],[4.66604,50.8243305],[4.6663513,50.8242505],[4.6664369,50.8242096],[4.6666398,50.8242392],[4.6667252,50.8242621],[4.66689,50.8242917],[4.6669682,50.8243015],[4.667131,50.8243135],[4.6673904,50.8243463],[4.6674839,50.8243554],[4.6676185,50.8243753],[4.6676885,50.82438],[4.6678808,50.824386],[4.6679731,50.8243929],[4.6681722,50.8244361],[4.6682876,50.8244718],[4.6683284,50.8244845],[4.6683491,50.8244934],[4.6683948,50.8245345],[4.6684516,50.8245995],[4.6685066,50.8246632],[4.6685537,50.8247272],[4.6686348,50.8248033],[4.6686748,50.8248308],[4.6687249,50.8248549],[4.6688316,50.8248972],[4.6688955,50.8249057],[4.6689637,50.8249056],[4.6690835,50.8248908],[4.6693094,50.8248686],[4.6694578,50.8248608],[4.6695848,50.8248673],[4.6697544,50.8248888],[4.6700308,50.8249443],[4.6701349,50.8249634],[4.6701808,50.8249657],[4.6703596,50.8249482],[4.6707349,50.8249165],[4.6708154,50.8249189],[4.670978,50.8249313],[4.671081,50.8249472],[4.6711812,50.8249448],[4.6712947,50.8249198],[4.6715549,50.8248428],[4.6717642,50.8248135],[4.6720603,50.8247945],[4.6723176,50.8248529],[4.6724522,50.8248564],[4.6725755,50.8248536],[4.6728811,50.8248642],[4.6730853,50.8248812],[4.6731689,50.824891],[4.6734429,50.8249172],[4.6734831,50.8249177],[4.6735802,50.8249313],[4.673666,50.8249514],[4.6739828,50.8249789],[4.674095,50.8250265],[4.6741757,50.825048],[4.6742705,50.8250838],[4.6742945,50.8250983],[4.6745168,50.8251938],[4.674611,50.82523],[4.6747825,50.8252828],[4.6748746,50.8253063],[4.6750464,50.8253368],[4.6751791,50.8253199],[4.6753072,50.8252936],[4.6753652,50.8252905],[4.6755268,50.8252954],[4.6756581,50.82531],[4.6757826,50.825317],[4.6758737,50.8253164],[4.6760489,50.8253228],[4.6761088,50.8253275],[4.676189,50.8253461],[4.6767211,50.825409],[4.6771475,50.8254327],[4.6778056,50.8254481],[4.6779761,50.8254439],[4.6784313,50.8254063],[4.678495,50.825404],[4.6785678,50.8254014],[4.678639,50.8253986],[4.678725,50.8254042],[4.6789125,50.8254641],[4.67896,50.8254721],[4.6790464,50.8255085],[4.6790863,50.8255429],[4.6792005,50.8255911],[4.6792447,50.8256056],[4.679334,50.8256194],[4.6794,50.8256422],[4.6794737,50.8256757],[4.6795763,50.8257052],[4.6797064,50.8257123],[4.6797631,50.8257403],[4.6799631,50.8257451],[4.6800489,50.8257524],[4.6801033,50.8257612],[4.6803841,50.8258579],[4.6806647,50.825971],[4.6807588,50.8259952],[4.6807789,50.8260186],[4.6812946,50.826152],[4.6814308,50.8260661],[4.6816603,50.8260384],[4.6819111,50.8259914],[4.6821614,50.8259302],[4.6829106,50.8258611],[4.6830217,50.8258333],[4.6831249,50.8257766],[4.6832778,50.8257267],[4.6833368,50.8256962],[4.68344,50.825614],[4.6835165,50.825586],[4.684238,50.8255607],[4.6842232,50.8258759],[4.6848603,50.8259401],[4.6852593,50.8259876],[4.6854376,50.8260147],[4.6855418,50.8260113],[4.6854826,50.8261689],[4.6848887,50.8271143],[4.6844238,50.8276879],[4.6843848,50.8278829],[4.6855809,50.8283938],[4.6857873,50.8283695],[4.6862791,50.8285697],[4.6862866,50.8286394],[4.6858905,50.8289907],[4.6857226,50.829581],[4.6856888,50.830013],[4.6859468,50.8303313],[4.6866484,50.8308693],[4.6878757,50.8324678],[4.6887931,50.8328193],[4.6891524,50.8329438],[4.6904183,50.8325508],[4.6910907,50.8337118],[4.6914572,50.8348321],[4.6923384,50.8345753],[4.6924537,50.8345417],[4.6940737,50.8340696],[4.6940892,50.8340711],[4.694189,50.8340809],[4.6942896,50.8340907],[4.6971575,50.8333295],[4.6972561,50.8335029],[4.6972775,50.8336672],[4.6973661,50.833834],[4.6974143,50.8339484],[4.6974815,50.8342033],[4.6975994,50.8343431],[4.6987227,50.8348839],[4.6990094,50.8351354],[4.6990793,50.8352201],[4.699104,50.8352512],[4.6991645,50.8353955],[4.6991491,50.8356102],[4.6991046,50.8359025],[4.6991255,50.8362838],[4.6992536,50.8366026],[4.6996831,50.8374371],[4.6998646,50.8377803],[4.6999946,50.8380358],[4.7002265,50.8382654],[4.7004909,50.8385236],[4.7005756,50.8385693],[4.7006564,50.838613],[4.7008462,50.8387049],[4.7014067,50.8391668],[4.701663,50.8393545],[4.7031007,50.8405393],[4.7042394,50.8401484],[4.7052013,50.8410753],[4.7067176,50.8405943],[4.7081415,50.8402058],[4.7089414,50.84091],[4.7062194,50.8417243],[4.7061071,50.8417579],[4.706048,50.8417756],[4.7050818,50.8420723],[4.7054293,50.8423774],[4.7060594,50.8428683],[4.7078669,50.8443992],[4.7097198,50.8452061],[4.710368,50.8451661],[4.7106917,50.8451477],[4.7103511,50.8445366],[4.7126833,50.8440687],[4.7131421,50.8450114],[4.7270169,50.8442364],[4.7281981,50.8442674],[4.7338941,50.8438789],[4.7385894,50.8433145],[4.7413125,50.8428484],[4.7423246,50.842637],[4.7417436,50.8432662],[4.740867,50.8442221],[4.740489,50.8444605],[4.7405085,50.8446236],[4.7403136,50.844842],[4.7400554,50.845002],[4.7400576,50.8451502],[4.7396661,50.845825],[4.7392594,50.846758],[4.7386472,50.8486353],[4.7380144,50.8495842],[4.7378642,50.8499782],[4.7374793,50.8505599],[4.7367616,50.8524529],[4.736249,50.8524742],[4.7361254,50.8530827],[4.7356284,50.8545018],[4.7348717,50.8559448],[4.7343944,50.856538],[4.7344704,50.8571393],[4.7347662,50.857667],[4.7350734,50.8578668],[4.7353238,50.8580528],[4.7356487,50.8582151],[4.7359973,50.858553],[4.7362224,50.8584417],[4.7378095,50.8594503],[4.7380782,50.8596654],[4.7394388,50.8598471],[4.7395927,50.8598986],[4.7397659,50.8600146],[4.7400777,50.8602881],[4.7403263,50.8606342],[4.7407547,50.8608675],[4.7408894,50.8609409],[4.7412456,50.8611348],[4.7427702,50.8621121],[4.7439336,50.8636362],[4.744504,50.8635014],[4.7459477,50.8645023],[4.7459838,50.864532],[4.7462603,50.8647492],[4.7467925,50.8652716],[4.7470097,50.8654733],[4.7470697,50.865529],[4.7472733,50.8657418],[4.7473959,50.865867],[4.7474759,50.8659955],[4.7482489,50.8674544],[4.7489894,50.8673826],[4.7497941,50.8673456],[4.7499261,50.8676054],[4.7500685,50.8681064],[4.7505365,50.868917],[4.7506104,50.8690303],[4.7506487,50.869044],[4.7520074,50.8703176],[4.7520028,50.8706205],[4.7520117,50.8706664],[4.7525863,50.870856],[4.7540364,50.8718281],[4.7540726,50.8718259],[4.754233,50.8718573],[4.7552112,50.8720429],[4.7560479,50.8721074],[4.7569209,50.8721897],[4.7573933,50.8722797],[4.7581066,50.8725856],[4.7587911,50.8728048],[4.760038,50.8729675],[4.7601568,50.873019],[4.7605684,50.8734865],[4.7606848,50.8736285],[4.7620725,50.8752302],[4.767419,50.881401],[4.7685085,50.8828834],[4.769547,50.883987],[4.7705305,50.8853012],[4.770356,50.886272],[4.7700429,50.8875793],[4.7700375,50.8885844],[4.7697921,50.8896657],[4.7656724,50.8893406],[4.7645568,50.8892565],[4.7591545,50.8888213],[4.7565387,50.8886112],[4.7538023,50.8883885],[4.7528184,50.8882242],[4.7518368,50.8880518],[4.7511536,50.8879361],[4.7511374,50.8880195],[4.7512504,50.8889825],[4.7514032,50.8901652],[4.7514916,50.8908007],[4.7515105,50.8909296],[4.7515788,50.8913959],[4.7516203,50.892069],[4.7516611,50.8925059],[4.7516665,50.8925803],[4.7516692,50.8926183],[4.7516577,50.8926709],[4.7516513,50.8927],[4.7516069,50.8927734],[4.7513151,50.8931298],[4.7512785,50.89321],[4.7512773,50.8932479],[4.7512889,50.8933205],[4.7512263,50.8933281],[4.7511753,50.8933321],[4.7510268,50.8933305],[4.7504995,50.8933198],[4.7498564,50.893309],[4.7486741,50.8932854],[4.7481336,50.8932451],[4.7479728,50.8932618],[4.7479359,50.8932909],[4.7480739,50.8933799],[4.7481721,50.8934823],[4.7482096,50.8935492],[4.7483174,50.893741],[4.74838,50.8938091],[4.7484459,50.8938848],[4.748589,50.8940111],[4.748863,50.8942249],[4.7490108,50.8943225],[4.7491365,50.8943876],[4.749196,50.894405],[4.7492934,50.8944108],[4.7493568,50.8944116],[4.7493886,50.8944733],[4.7494911,50.8945596],[4.7503177,50.8948494],[4.7505844,50.8949371],[4.7508449,50.8950379],[4.7510192,50.8951344],[4.7512224,50.8952465],[4.7513885,50.8953405],[4.751833,50.8956027],[4.7518614,50.8956186],[4.7520561,50.8957278],[4.7521267,50.8957839],[4.7523424,50.8959523],[4.752799,50.8964035],[4.7531616,50.8967028],[4.7535008,50.8969536],[4.7540044,50.8973319],[4.7541624,50.897491],[4.7545184,50.8978497],[4.7545944,50.8979346],[4.7546934,50.8980412],[4.7547675,50.8981628],[4.7548092,50.8982184],[4.7546858,50.8983211],[4.7545715,50.8984645],[4.7544871,50.8986499],[4.7544082,50.898771],[4.7543471,50.8988621],[4.7541948,50.8990782],[4.7540432,50.8992681],[4.753987,50.8993715],[4.7539268,50.8995055],[4.7538679,50.8996519],[4.7538016,50.8998093],[4.7537657,50.899855],[4.7536589,50.8999062],[4.753795,50.9000279],[4.7539379,50.9001425],[4.7540739,50.9002329],[4.7542886,50.9003602],[4.7546255,50.9005524],[4.7550176,50.9007383],[4.7559066,50.9011458],[4.7560201,50.9012163],[4.7561274,50.9013143],[4.7564123,50.9016354],[4.756492,50.9017766],[4.7565147,50.901949],[4.7567778,50.9024997],[4.756896,50.9027219],[4.7570628,50.9029482],[4.7574212,50.9033452],[4.7577167,50.9037947],[4.7578072,50.9039162],[4.7579039,50.9040293],[4.7581644,50.9042619],[4.7591233,50.904959],[4.7593261,50.9051017],[4.7595639,50.9053866],[4.759657,50.9054807],[4.7597906,50.9060801],[4.7598306,50.9062579],[4.759886,50.9063852],[4.760252,50.9068824],[4.760391,50.907093],[4.7604983,50.9072804],[4.7605198,50.9073234],[4.7606083,50.9075724],[4.7606282,50.9078017],[4.7604632,50.9078203],[4.7589427,50.9079424],[4.7574531,50.908076],[4.7564593,50.9081599],[4.7557143,50.9082208],[4.7534645,50.9084181],[4.7500223,50.9087144],[4.7488342,50.9088283],[4.7481201,50.9088664],[4.7455487,50.9084888],[4.7443848,50.9083021],[4.7426575,50.9080655],[4.7397132,50.9076831],[4.7375181,50.9073689],[4.7321331,50.9066451],[4.7300842,50.9062856],[4.7295921,50.9061105],[4.729172,50.9060797],[4.7250751,50.9070534],[4.7237283,50.9074679],[4.7223075,50.9078107],[4.7220748,50.907918],[4.7219753,50.908366],[4.7216301,50.9085129],[4.720976,50.9085887],[4.7204848,50.9086971],[4.7194611,50.9080714],[4.7193274,50.9079368],[4.7192485,50.9078545],[4.7191714,50.9077698],[4.7189563,50.907532],[4.7187698,50.9073933],[4.7187035,50.9073609],[4.7184327,50.9072246],[4.7183441,50.9071997],[4.7182453,50.9071883],[4.7179749,50.9071817],[4.7172236,50.9079116],[4.7175274,50.9084996],[4.7170867,50.9086968],[4.7157242,50.9091649],[4.715962,50.9096766],[4.7161819,50.9102915],[4.7160905,50.9108158],[4.7161482,50.9109917],[4.7160105,50.911403],[4.7160217,50.9116571],[4.7159916,50.9119619],[4.7160739,50.9122475],[4.716112,50.9124228],[4.7162048,50.9130115],[4.7162098,50.9133488],[4.7160203,50.9137114],[4.7157084,50.9141405],[4.7157487,50.9142488],[4.7156321,50.9145221],[4.7160615,50.9146267],[4.71648,50.9146138],[4.7167801,50.9151485],[4.7174096,50.9157515],[4.7177366,50.9157649],[4.7178279,50.9158637],[4.7185754,50.9162628],[4.7194826,50.9167958],[4.7204668,50.9173674],[4.722854,50.917758],[4.7238604,50.9179459],[4.7271864,50.9189104],[4.7297885,50.9194877],[4.7292134,50.920225],[4.7288842,50.9209556],[4.728367,50.9221327],[4.7283334,50.9222045],[4.7281423,50.9226452],[4.7313859,50.9227723],[4.7315721,50.9222708],[4.7328905,50.922333],[4.7338513,50.9223985],[4.7349822,50.9225986],[4.735977,50.922912],[4.738772,50.923908],[4.741527,50.92456],[4.742345,50.924915],[4.7428824,50.9252419],[4.744534,50.925314],[4.7453397,50.925426],[4.7461835,50.925749],[4.7468387,50.9261126],[4.7474254,50.926544],[4.7461999,50.9277958],[4.7474431,50.9282371],[4.7454806,50.9303107],[4.7452501,50.9316494],[4.7446863,50.9327975],[4.745475,50.93301],[4.7450761,50.9343506],[4.7454514,50.934568],[4.7455813,50.9347174],[4.7456622,50.9350179],[4.745299,50.935012],[4.745135,50.9351178],[4.7449957,50.9351324],[4.7447738,50.9351268],[4.7446548,50.9351685],[4.7446172,50.9352789],[4.7447278,50.9354156],[4.744715,50.935478],[4.7446229,50.9355076],[4.7444202,50.9354779],[4.7441528,50.9355577],[4.7439407,50.9355447],[4.7438473,50.9355721],[4.7436366,50.9357236],[4.743542,50.935844],[4.7434798,50.9359746],[4.743479,50.9361066],[4.7422982,50.9352066],[4.7419728,50.9356858],[4.7411485,50.935432],[4.7402345,50.9364612],[4.7379417,50.9355356],[4.7372707,50.9354768],[4.736983,50.9360293],[4.7367182,50.9360135],[4.7351183,50.935874],[4.7350371,50.9359862],[4.7349391,50.9360977],[4.7348267,50.9362263],[4.7347621,50.9363502],[4.7346795,50.9366104],[4.7345774,50.9367659],[4.7345225,50.9369655],[4.7344866,50.9370359],[4.7343633,50.9371535],[4.7343024,50.9372632],[4.7342532,50.9373862],[4.7341896,50.9375626],[4.7341076,50.9378896],[4.7340895,50.9379684],[4.7340657,50.9380327],[4.7340051,50.9382414],[4.7339889,50.9382839],[4.7339537,50.9383843],[4.7339015,50.9384749],[4.7338362,50.9386172],[4.7337918,50.9388612],[4.7337623,50.9390229],[4.7336694,50.9393722],[4.7336698,50.9393767],[4.7336438,50.9393932],[4.7336176,50.9394018],[4.7331543,50.9394545],[4.7331191,50.9394639],[4.7329316,50.939379],[4.7326733,50.9392627],[4.7324841,50.9391776],[4.7323222,50.9391042],[4.7321309,50.9390183],[4.7319372,50.9389308],[4.7318179,50.93882],[4.7312542,50.9389994],[4.7308181,50.9383614],[4.7306614,50.9382467],[4.7306008,50.9382016],[4.7305263,50.9381471],[4.7304214,50.9380699],[4.7302138,50.9379176],[4.7299944,50.9380554],[4.7299043,50.9379923],[4.7298532,50.9379493],[4.7298299,50.9379287],[4.7297981,50.9379007],[4.7297304,50.9378357],[4.7294729,50.937592],[4.7292675,50.9374994],[4.7292311,50.9374831],[4.7290698,50.9374108],[4.7287533,50.9372693],[4.7286722,50.9372329],[4.7283762,50.9370367],[4.7282752,50.936929],[4.728184,50.9368309],[4.7278904,50.9366279],[4.72773,50.936557],[4.7275312,50.9365087],[4.7272064,50.9364304],[4.7268525,50.9363441],[4.7265446,50.9362697],[4.7264917,50.9362435],[4.7262613,50.9361293],[4.7265333,50.935904],[4.7265861,50.9358617],[4.7266142,50.9358412],[4.7266308,50.9358304],[4.7260584,50.9353903],[4.7258985,50.9354711],[4.7258023,50.9352972],[4.7257389,50.9352027],[4.7256741,50.9351163],[4.7254945,50.9349148],[4.7254689,50.9348896],[4.7254255,50.9348468],[4.7253747,50.934797],[4.725323,50.9347466],[4.7252921,50.9347157],[4.7250439,50.9344739],[4.7248069,50.9342409],[4.7245279,50.9340653],[4.7240007,50.9337581],[4.7239162,50.9337099],[4.7238727,50.9336846],[4.7238205,50.9336545],[4.7236725,50.9335691],[4.7235673,50.933487],[4.7234627,50.933404],[4.72334,50.9333067],[4.7232549,50.9332394],[4.7232012,50.9331972],[4.723013,50.9330484],[4.7229173,50.9329727],[4.7228053,50.9328838],[4.7227048,50.9328049],[4.7226737,50.9327811],[4.722627,50.9327482],[4.7225721,50.9327122],[4.722492,50.9326584],[4.7223748,50.9325808],[4.7223052,50.9325343],[4.7221615,50.9324661],[4.7221217,50.9324479],[4.7220127,50.9324108],[4.7215472,50.9322983],[4.7212428,50.9322252],[4.7207553,50.9321074],[4.720745,50.9321181],[4.7204683,50.9322219],[4.7203818,50.9322553],[4.7202745,50.9322963],[4.7192047,50.9326995],[4.719117,50.9325928],[4.7190424,50.9325027],[4.7189558,50.9323971],[4.7188886,50.9323157],[4.7188174,50.9322292],[4.7187679,50.9321684],[4.7186975,50.9320835],[4.7186472,50.9320223],[4.718577,50.9319678],[4.7184336,50.9318565],[4.7183975,50.9318285],[4.7183462,50.9317961],[4.7182723,50.9317647],[4.7179987,50.931647],[4.7177892,50.9315569],[4.7176103,50.9314804],[4.7175321,50.9314324],[4.7174528,50.9313842],[4.7173708,50.931334],[4.7172981,50.9312898],[4.7171614,50.9312465],[4.7170774,50.9312295],[4.7170209,50.9312203],[4.7169519,50.9312167],[4.7166916,50.9312266],[4.7156328,50.9305189],[4.7154101,50.930429],[4.7151245,50.9302751],[4.7151197,50.9302239],[4.7151507,50.9301663],[4.7153579,50.9298991],[4.7151428,50.9297793],[4.7149364,50.9297181],[4.714597,50.9296808],[4.7144149,50.9295151],[4.7141728,50.9291229],[4.7140289,50.9289927],[4.7137001,50.9288214],[4.7133119,50.9287338],[4.7131445,50.9287341],[4.712933,50.9287538],[4.7126735,50.9287805],[4.712432,50.9287421],[4.7121568,50.9286766],[4.7117851,50.9285949],[4.711652,50.9285495],[4.7114847,50.928508],[4.7114328,50.928425],[4.7112708,50.9284391],[4.7111157,50.9284842],[4.7109796,50.9285323],[4.7111009,50.9286464],[4.7111539,50.9287107],[4.7111692,50.9288085],[4.7111368,50.9289537],[4.7110722,50.9291083],[4.7110059,50.9292077],[4.710943,50.9294052],[4.7109712,50.9295479],[4.7110209,50.9296295],[4.7111422,50.9297244],[4.7113986,50.9298901],[4.7116784,50.9300885],[4.7119296,50.9303998],[4.712648,50.931537],[4.713162,50.932025],[4.713538,50.93251],[4.7128063,50.932601],[4.7122314,50.9326348],[4.7120365,50.9326839],[4.711827,50.9328036],[4.711724,50.933078],[4.711621,50.933338],[4.711536,50.933918],[4.7115005,50.9342469],[4.71157,50.934474],[4.7116662,50.9349255],[4.7118026,50.935119],[4.7124214,50.9353585],[4.7124848,50.9354813],[4.7124799,50.9356011],[4.7119293,50.9359081],[4.7117831,50.9369306],[4.7114518,50.9374864],[4.711022,50.937881],[4.710714,50.938419],[4.7107697,50.9390983],[4.71068,50.939189],[4.7104627,50.9393041],[4.7097513,50.9396234],[4.7092787,50.9398291],[4.7083285,50.9404646],[4.7080508,50.9405598],[4.7075879,50.9406028],[4.7071007,50.9407655],[4.7068912,50.9409068],[4.7069155,50.9410265],[4.707013,50.941094],[4.7073394,50.9413612],[4.70751,50.9415024],[4.7075197,50.941573],[4.7073346,50.9415914],[4.7068035,50.9415239],[4.7065111,50.941573],[4.7062139,50.9417634],[4.7055512,50.9421195],[4.7050688,50.9426261],[4.70505,50.942783],[4.7049837,50.9432423],[4.7049053,50.9434014],[4.7047096,50.9435537],[4.7045616,50.9436059],[4.7040757,50.9436475],[4.7037802,50.9436657],[4.7033186,50.9432818],[4.7029232,50.9426708],[4.7025837,50.9424627],[4.7018806,50.9421313],[4.7013845,50.9421609],[4.7009998,50.9420152],[4.700864,50.9419638],[4.6996592,50.9415638],[4.6995274,50.9416863],[4.6985642,50.9414805],[4.6977359,50.941385],[4.6967392,50.9411887],[4.6954183,50.9411333],[4.6938166,50.9409736],[4.6933044,50.9409447],[4.6932577,50.9410986],[4.6932151,50.9413535],[4.6931814,50.9415823],[4.6931835,50.9417537],[4.6931438,50.9417657],[4.693023,50.9418024],[4.6929041,50.9418842],[4.6926057,50.9420926],[4.6920071,50.9425034],[4.6916187,50.9427694],[4.690979,50.9432192],[4.6903806,50.9436067],[4.6897756,50.9439115],[4.6894703,50.9440707],[4.6893623,50.9440051],[4.6887129,50.9435924],[4.6882423,50.9433084],[4.6878911,50.9431137],[4.6873669,50.9429005],[4.6867023,50.9426518],[4.6862151,50.9424953],[4.6846854,50.9421006],[4.6840626,50.9419662],[4.6823967,50.9416007],[4.6825544,50.9413378],[4.6820116,50.9411436],[4.6807956,50.9407149],[4.6803023,50.9403679],[4.6801984,50.9402713],[4.6801289,50.9401908],[4.6800802,50.9401863],[4.6800354,50.9402093],[4.6799803,50.9402917],[4.6799271,50.9403134],[4.6789655,50.940359],[4.6764405,50.9394368],[4.6764791,50.9391864],[4.6762189,50.9387419],[4.6760103,50.9384824],[4.6755345,50.938214],[4.6749217,50.9376387],[4.6748836,50.9376233],[4.6748525,50.937598],[4.6747414,50.937524],[4.6746679,50.9374835],[4.6745587,50.9374429],[4.6742071,50.9373301],[4.6738685,50.9372177],[4.6737215,50.9371869],[4.6735702,50.9371691],[4.6733224,50.937148],[4.6729686,50.9371207],[4.6728629,50.9371066],[4.6726049,50.9370644],[4.6723976,50.9370059],[4.6724507,50.9366172],[4.6715302,50.9361503],[4.6711728,50.9359807],[4.6785342,50.9311607],[4.685081,50.926704],[4.6920509,50.9240477],[4.6951668,50.9228782],[4.6965109,50.9223719],[4.698466,50.92163],[4.7005432,50.9208271],[4.7024714,50.9200718],[4.7024905,50.9200628],[4.7019696,50.9199906],[4.7011804,50.9199136],[4.6989629,50.9199755],[4.6974071,50.9200139],[4.6955507,50.9195979],[4.6950353,50.9194823],[4.6937696,50.9188483],[4.6943654,50.918251],[4.6954059,50.9171454],[4.6959712,50.9165487],[4.6954929,50.9163885],[4.6953057,50.9163386],[4.6947724,50.9162191],[4.694582,50.9161668],[4.6940908,50.9159831],[4.694352,50.9154961],[4.695023,50.9142733],[4.6943303,50.9141331],[4.6944945,50.9137221],[4.6947492,50.9121701],[4.6951257,50.9110811],[4.695217,50.9107737],[4.6932281,50.9103788],[4.6931359,50.9102289],[4.6928828,50.9098726],[4.692877,50.9098644],[4.6925504,50.909499],[4.69229,50.9075675],[4.692061,50.9058193],[4.6919678,50.9054613],[4.6919681,50.9050308],[4.6918757,50.9047445],[4.6917994,50.9045327],[4.6918389,50.9044468],[4.6915835,50.9037333],[4.6931474,50.89935],[4.6926986,50.8991256],[4.6919844,50.8987853],[4.6918313,50.8986882],[4.6916796,50.8985773],[4.6915917,50.8984955],[4.691493,50.8983831],[4.6913658,50.8982069],[4.6912367,50.898061],[4.691132,50.8979649],[4.691023,50.8978804],[4.690877,50.8977904],[4.6907205,50.8977112],[4.6905944,50.897649],[4.6903586,50.8975505],[4.6898209,50.8973517],[4.6893125,50.8971556],[4.6889009,50.8969865],[4.6888671,50.8969721],[4.6888327,50.8969583],[4.6887472,50.8958236],[4.6887938,50.8950012],[4.6885456,50.8949378],[4.688327,50.894882],[4.6880404,50.8947918],[4.6880368,50.8947777],[4.6884458,50.8945124],[4.6883667,50.8944869],[4.6873015,50.8940836],[4.6853283,50.8933275],[4.6835864,50.8926308],[4.6812463,50.8917403],[4.6798028,50.8911308],[4.6789082,50.8906844],[4.6781066,50.8902137],[4.6774913,50.8898139],[4.6770128,50.8894553],[4.6762899,50.8888323],[4.6754954,50.8880588],[4.6750332,50.8875071],[4.6742913,50.8865322],[4.6734361,50.8855487],[4.6731463,50.8855644],[4.6725209,50.884997],[4.6719209,50.8841757],[4.6716292,50.8837399],[4.6710862,50.8832282],[4.6708248,50.8829631],[4.6710372,50.8822257],[4.6711036,50.8816264],[4.6706352,50.8813698],[4.6705859,50.881335],[4.6699535,50.8810714],[4.6693417,50.8807085],[4.6687602,50.8803455],[4.6679975,50.8798192],[4.6678052,50.8797149],[4.6671601,50.8795866],[4.6659954,50.8794292],[4.6658333,50.8794162],[4.6656691,50.8794013],[4.6654893,50.8793814],[4.6652211,50.8793628],[4.6644668,50.8793163],[4.6635112,50.8792731],[4.6629573,50.8792587],[4.6625148,50.8792553],[4.6621366,50.879202],[4.6617302,50.8791005],[4.6615948,50.879048],[4.6614897,50.8789966],[4.6613239,50.8790243],[4.6611777,50.8790286],[4.6610282,50.8790193],[4.6599841,50.8789363],[4.6597699,50.8789325],[4.6593927,50.8789533],[4.6588965,50.8789922],[4.6586478,50.8789952],[4.65836,50.8789786],[4.6579926,50.8789374],[4.6576439,50.8788813],[4.6570728,50.8787626],[4.6567145,50.8786783],[4.6555732,50.8784557],[4.6553159,50.8784565],[4.6536489,50.8787761],[4.6530706,50.8788748],[4.6527115,50.8789309],[4.6524806,50.8789495],[4.6523251,50.8789507],[4.6520476,50.8789305],[4.6510347,50.8786942],[4.650452,50.8785889],[4.6502278,50.8785484],[4.6501992,50.8785432],[4.6494333,50.8784551],[4.6494377,50.8783846],[4.647686,50.8780387],[4.6475235,50.8780225],[4.6445619,50.8768325],[4.6452136,50.8759733],[4.6446754,50.8758206],[4.6443669,50.8757283],[4.6441617,50.8756562],[4.6441989,50.8755843],[4.6441304,50.8754402],[4.6441215,50.8751351],[4.644039,50.8748398],[4.6440504,50.8747721],[4.6441148,50.8746621],[4.6443411,50.874459],[4.6444971,50.8743487],[4.6445678,50.8742655],[4.6446855,50.8740278],[4.6449208,50.8735526],[4.6450341,50.8732128],[4.6450251,50.8731132],[4.6450204,50.873062],[4.6449839,50.8730249],[4.6449128,50.8729957],[4.6447746,50.8729568],[4.6442094,50.8728155],[4.6439638,50.8727378],[4.6437853,50.8726303],[4.6437654,50.8725659],[4.6439061,50.8724141],[4.6443951,50.8721291],[4.6450302,50.8718196],[4.6454291,50.8714957],[4.6459436,50.8693191],[4.6460435,50.8689874],[4.6467259,50.8672004],[4.6467072,50.8671242],[4.6467568,50.8670569],[4.6467415,50.8669812],[4.6478933,50.8653167],[4.6465148,50.8650141],[4.6469199,50.8628922],[4.6464471,50.8611064],[4.6460193,50.8610403],[4.6451247,50.8606484],[4.6444396,50.8602833],[4.6434778,50.8598459],[4.6430525,50.859583],[4.6415438,50.8590831],[4.640295,50.8558584],[4.6406462,50.8555516],[4.6408144,50.8541501],[4.6410673,50.8528727],[4.6414232,50.8525821],[4.6416572,50.8523278],[4.6419029,50.852136],[4.6426043,50.852345],[4.6442785,50.8514375],[4.6452832,50.8508687],[4.645781,50.8505471],[4.6460713,50.850075],[4.6459964,50.8494381],[4.6459637,50.8489883],[4.6469215,50.8489883],[4.6466886,50.8486276],[4.6464313,50.8482232]]]]};
+
+// ─── Analysis Engine ──────────────────────────────────────────────────────────
+// Mirrors the Python script algorithms exactly.
+// Runs entirely in the browser — no server, no hardcoded data, fully auditable.
+
+const ANALYSIS_YEAR = 2026;
+const MAX_PERIODS   = 4;
+const PERIOD_DAYS   = 30;
+
+const EXCEL_COL = {
+  reg:      'Registratienummer logies',
+  url:      'Listing URL',
+  adres:    'Adres STR-unit',
+  start:    'Begindatum boeking',
+  einde:    'Einddatum boeking',
+  gasten:   'Totaal aantal gasten',
+  platform: 'Boekingsplatform',
 };
+
+function parseExcelDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val) ? null : Math.floor(val.getTime() / 86400000);
+  if (typeof val === 'string') {
+    const p = val.split('/');
+    if (p.length === 3) {
+      const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+      if (!isNaN(d.getTime())) return Math.floor(d.getTime() / 86400000);
+    }
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return Math.floor(d.getTime() / 86400000);
+  }
+  return null;
+}
+function daysToISO(days) { return new Date(days * 86400000).toISOString().slice(0, 10); }
+function getDayYear(days) { return new Date(days * 86400000).getFullYear(); }
+
+/**
+ * Mirrors Python _bouw_periodes: sliding 30-day windows over sorted rental nights.
+ * Period 1 starts on night 1 and lasts 30 days.
+ * The first night after that window opens period 2, etc.
+ */
+function buildPeriods(sortedDays) {
+  if (!sortedDays.length) return [];
+  const periods = [];
+  let start = sortedDays[0], endEx = start + PERIOD_DAYS, buf = [];
+  for (const d of sortedDays) {
+    if (d < endEx) {
+      buf.push(d);
+    } else {
+      periods.push({ nr: periods.length + 1, start: daysToISO(start), einde: daysToISO(endEx), n: buf.length });
+      start = d; endEx = d + PERIOD_DAYS; buf = [d];
+    }
+  }
+  periods.push({ nr: periods.length + 1, start: daysToISO(start), einde: daysToISO(endEx), n: buf.length });
+  return periods;
+}
+
+/** Mirrors Python _normaliseer_adres: lowercase + collapse whitespace. */
+function normalizeAdres(s) { return String(s).toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+/**
+ * Full 4x30 analysis — accepts parsed Excel rows + live basisregister data.
+ * Returns an array shaped identically to the dashboard + map data model.
+ */
+function runAnalysis(excelRows, basisregister) {
+  const basisById = new Map(basisregister.map(r => [r.id, r]));
+  const bookings  = [];
+  for (const [i, row] of excelRows.entries()) {
+    const reg = parseInt(row[EXCEL_COL.reg]);
+    const sd  = parseExcelDate(row[EXCEL_COL.start]);
+    const ed  = parseExcelDate(row[EXCEL_COL.einde]);
+    const g   = parseInt(row[EXCEL_COL.gasten]) || 0;
+    if (!reg || isNaN(reg) || !sd || !ed || ed <= sd) continue;
+    bookings.push({ id: i, reg, startDays: sd, eindeDays: ed, gasten: g,
+      platform: String(row[EXCEL_COL.platform] || '?'),
+      adresUnit: String(row[EXCEL_COL.adres] || '') });
+  }
+  const byReg = new Map();
+  for (const b of bookings) { if (!byReg.has(b.reg)) byReg.set(b.reg, []); byReg.get(b.reg).push(b); }
+
+  const results = [];
+  for (const [reg, grp] of byReg.entries()) {
+    const basis = basisById.get(reg);
+    const platform = grp[0].platform, adresUnit = grp[0].adresUnit;
+    const nk = !basis;
+
+    // Address flag
+    let ad = false, adresInfo = null;
+    if (!nk && adresUnit && normalizeAdres(adresUnit) !== normalizeAdres(basis.adres)) {
+      ad = true; adresInfo = { basisregister: basis.adres, boekingsdata: adresUnit };
+    }
+
+    // 4×30: expand nights → build periods
+    const nightSet = new Set();
+    for (const b of grp) for (let d = b.startDays; d < b.eindeDays; d++) if (getDayYear(d) === ANALYSIS_YEAR) nightSet.add(d);
+    const sortedNights = [...nightSet].sort((a, b) => a - b);
+    let periodes = null, eersteOv = null, nachtenOv = 0, ov = false, eersteOvDays = null;
+
+    if (sortedNights.length > 0) {
+      const rawPeriods = buildPeriods(sortedNights);
+      ov = rawPeriods.length > MAX_PERIODS;
+      if (ov) {
+        eersteOvDays = parseExcelDate(rawPeriods[MAX_PERIODS].start);
+        eersteOv     = rawPeriods[MAX_PERIODS].start;
+        nachtenOv    = sortedNights.filter(d => d >= eersteOvDays).length;
+      }
+      periodes = rawPeriods.map((p, i) => ({ nr: p.nr, start: p.start, einde: p.einde, n: p.n, ...(ov && i >= MAX_PERIODS ? { v: true } : {}) }));
+    }
+
+    // Concurrent check — sweep-line per day, mirrors Python exactly
+    let un = false, ca = false, concInfo = null;
+    if (!nk && basis) {
+      const maxUnits = basis.units || 0, maxCap = basis.cap || 0;
+      const events = [];
+      for (const b of grp) { events.push([b.startDays, 1, 1, b.gasten]); events.push([b.eindeDays, 0, -1, -b.gasten]); }
+      events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      let curBook = 0, curGasten = 0;
+      const unitDays = [], capDays = [];
+      let i = 0;
+      while (i < events.length) {
+        const day = events[i][0];
+        while (i < events.length && events[i][0] === day) { curBook += events[i][2]; curGasten += events[i][3]; i++; }
+        if (maxUnits > 0 && curBook   > maxUnits) unitDays.push({ datum: daysToISO(day), w: curBook   });
+        if (maxCap   > 0 && curGasten > maxCap)   capDays .push({ datum: daysToISO(day), w: curGasten });
+      }
+      if (unitDays.length > 0) { un = true; concInfo = { type: 'units', limiet: maxUnits, piek: Math.max(...unitDays.map(e => e.w)), events: unitDays }; }
+      if (capDays .length > 0) { ca = true; if (!concInfo) concInfo = { type: 'cap', limiet: maxCap, piek: Math.max(...capDays.map(e => e.w)), events: capDays }; }
+    }
+
+    const boekingen = grp.map(b => ({
+      id: b.id, start: daysToISO(b.startDays), einde: daysToISO(b.eindeDays),
+      g: b.gasten, pl: b.platform,
+      v: !!(ov && eersteOvDays != null && b.eindeDays > eersteOvDays),
+    }));
+
+    results.push({
+      id: reg, naam: basis?.naam || adresUnit || `#${reg}`, adres: basis?.adres || adresUnit || '',
+      disc: basis?.disc || '\u2014', platform, units: basis?.units || null, cap: basis?.cap || null,
+      lat: basis?.lat || null, lon: basis?.lon || null, status: basis?.status || '',
+      flags: { ov, un, ca, nk, ad }, periodes, eersteOv, nachtenOv, boekingen,
+      conc: concInfo, adresInfo, tier: (ov || un || ca || nk || ad) ? 'flagged' : 'clean',
+    });
+  }
+  return results;
+}
+
 
 // ─── Merged dataset ───────────────────────────────────────────────────────────
 // Combines all basisregister entries with platform flag data from DATA.
 // tier: 'register' = basisregister only (no booking data received)
 //       'clean'    = in platform data, no flags
 //       'flagged'  = in platform data, one or more flags
-const MERGED_DATA = (() => {
-  const byId = new Map(DATA.map((d) => [d.id, d]));
-  const result = [];
-
-  BASISREGISTER.forEach((reg) => {
-    const p = byId.get(reg.id);
-    if (p) {
-      result.push({
-        ...reg,
-        platform: p.platform,
-        flags: p.flags,
-        periodes: p.periodes,
-        eersteOv: p.eersteOv,
-        nachtenOv: p.nachtenOv,
-        boekingen: p.boekingen,
-        conc: p.conc,
-        adresInfo: p.adresInfo,
-        tier: Object.values(p.flags).some(Boolean) ? 'flagged' : 'clean',
-      });
-    } else {
-      result.push({
-        ...reg,
-        platform: null,
-        flags: null,
-        periodes: null,
-        eersteOv: null,
-        nachtenOv: 0,
-        boekingen: [],
-        conc: null,
-        adresInfo: null,
-        tier: 'register',
-      });
-    }
-  });
-
-  // Platform entries not found in basisregister (unknown reg.nr.).
-  DATA.forEach((d) => {
-    if (!BASISREGISTER.some((r) => r.id === d.id)) {
-      result.push({
-        ...d,
-        tier: Object.values(d.flags).some(Boolean) ? 'flagged' : 'clean',
-      });
-    }
-  });
-
-  return result;
-})();
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD COMPONENTS (unchanged from original)
@@ -5053,20 +1034,18 @@ function DetailPanel({ acc, onClose }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function buildTooltipHTML(acc) {
-  const units =
-    acc.units != null
-      ? `${acc.units} unit${acc.units !== 1 ? 's' : ''} · max ${acc.cap} gasten`
-      : '—';
-  const tierLabel =
-    acc.tier === 'register'
-      ? 'Enkel in basisregister'
-      : acc.tier === 'flagged'
+  const units = acc.units != null
+    ? `${acc.units} unit${acc.units !== 1 ? 's' : ''} · max ${acc.cap} gasten`
+    : '—';
+  const tierLabel = acc.tier === 'register'
+    ? 'Enkel in basisregister'
+    : acc.tier === 'flagged'
       ? '&#9651; Overtredingen vastgesteld'
       : '&#10003; Geen overtredingen';
   return `<span style="font-family:system-ui,sans-serif;line-height:1.6">
-     <strong>${acc.naam}</strong><br>${acc.disc} · #${acc.id}<br>${units}<br>
-     <span style="font-size:10px;opacity:0.8">${tierLabel}</span>
-   </span>`;
+    <strong>${acc.naam}</strong><br>${acc.disc} · #${acc.id}<br>${units}<br>
+    <span style="font-size:10px;opacity:0.8">${tierLabel}</span>
+  </span>`;
 }
 
 function buildPopupHTML(acc) {
@@ -5074,19 +1053,14 @@ function buildPopupHTML(acc) {
     `#${acc.id}`,
     acc.disc,
     acc.platform || 'Geen platformdata',
-    acc.units != null
-      ? `${acc.units} units · ${acc.cap} gasten max`
-      : 'Eenheden onbekend',
+    acc.units != null ? `${acc.units} units · ${acc.cap} gasten max` : 'Eenheden onbekend',
     acc.status || '',
   ].filter(Boolean);
 
-  const chips = chipValues
-    .map(
-      (t) =>
-        `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;` +
-        `background:#f1f5f9;color:#475569;border:0.5px solid #e2e8f0;margin:0 3px 3px 0">${t}</span>`
-    )
-    .join('');
+  const chips = chipValues.map(t =>
+    `<span style="display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;` +
+    `background:#f1f5f9;color:#475569;border:0.5px solid #e2e8f0;margin:0 3px 3px 0">${t}</span>`
+  ).join('');
 
   let statusHTML = '';
   if (acc.tier === 'register') {
@@ -5100,15 +1074,12 @@ function buildPopupHTML(acc) {
       `background:#f0fdf4;border:0.5px solid rgba(21,128,61,0.3);margin-top:4px">` +
       `&#10003; Geen overtredingen vastgesteld</div>`;
   } else {
-    const activeFlags = FLAG_DEFS.filter((f) => acc.flags && acc.flags[f.key]);
-    statusHTML = activeFlags
-      .map(
-        (f) =>
-          `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:${f.color};` +
-          `padding:3px 7px;border-radius:4px;background:${f.color}14;` +
-          `border:0.5px solid ${f.color}38;margin-top:3px">&#9651; ${f.label}</div>`
-      )
-      .join('');
+    const activeFlags = FLAG_DEFS.filter(f => acc.flags && acc.flags[f.key]);
+    statusHTML = activeFlags.map(f =>
+      `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:${f.color};` +
+      `padding:3px 7px;border-radius:4px;background:${f.color}14;` +
+      `border:0.5px solid ${f.color}38;margin-top:3px">&#9651; ${f.label}</div>`
+    ).join('');
   }
 
   return (
@@ -5126,165 +1097,70 @@ function _mapMarkerPlaceholder() {}
 
 /** Legend panel rendered as an absolute overlay on the map wrapper div. */
 function MapLegend({
-  allDiscs,
-  activeDiscs,
-  activeSizes,
-  activeFlags,
-  showRegister,
-  showClean,
-  showFlagged,
-  onToggleDisc,
-  onToggleSize,
-  onToggleFlag,
-  onClearFlags,
-  onToggleRegister,
-  onToggleClean,
-  onToggleFlagged,
+  allDiscs, activeDiscs, activeSizes, activeFlags,
+  showRegister, showClean, showFlagged,
+  onToggleDisc, onToggleSize, onToggleFlag, onClearFlags,
+  onToggleRegister, onToggleClean, onToggleFlagged,
   counts,
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const maxDiam = SIZE_RADII[SIZE_RADII.length - 1] * 2;
 
   const secStyle = {
-    fontSize: 10,
-    fontWeight: 500,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    color: '#64748b',
-    borderTop: '0.5px solid rgba(0,0,0,0.08)',
-    marginTop: 8,
-    paddingTop: 8,
-    marginBottom: 5,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    fontSize: 10, fontWeight: 500, textTransform: 'uppercase',
+    letterSpacing: '0.06em', color: '#64748b',
+    borderTop: '0.5px solid rgba(0,0,0,0.08)', marginTop: 8, paddingTop: 8, marginBottom: 5,
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
   };
 
   const TIERS = [
-    {
-      key: 'register',
-      label: 'Enkel in basisregister',
-      color: '#94a3b8',
-      active: showRegister,
-      toggle: onToggleRegister,
-      count: counts.register,
-    },
-    {
-      key: 'clean',
-      label: 'Platformdata — geen overtredingen',
-      color: '#15803d',
-      active: showClean,
-      toggle: onToggleClean,
-      count: counts.clean,
-    },
-    {
-      key: 'flagged',
-      label: 'Platformdata — overtredingen',
-      color: '#b91c1c',
-      active: showFlagged,
-      toggle: onToggleFlagged,
-      count: counts.flagged,
-    },
+    { key: 'register', label: 'Enkel in basisregister',           color: '#94a3b8', active: showRegister, toggle: onToggleRegister, count: counts.register },
+    { key: 'clean',    label: 'Platformdata — geen overtredingen', color: '#15803d', active: showClean,    toggle: onToggleClean,    count: counts.clean    },
+    { key: 'flagged',  label: 'Platformdata — overtredingen',      color: '#b91c1c', active: showFlagged,  toggle: onToggleFlagged,  count: counts.flagged  },
   ];
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 20,
-        right: 10,
-        zIndex: 1000,
-        background: 'rgba(255,255,255,0.97)',
-        backdropFilter: 'blur(6px)',
-        borderRadius: 10,
-        border: '0.5px solid rgba(0,0,0,0.12)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-        fontFamily: 'system-ui,sans-serif',
-        minWidth: 200,
-        maxHeight: 'calc(100% - 50px)',
-        overflowY: 'auto',
-      }}
-    >
+    <div style={{
+      position: 'absolute', bottom: 20, right: 10, zIndex: 1000,
+      background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(6px)',
+      borderRadius: 10, border: '0.5px solid rgba(0,0,0,0.12)',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+      fontFamily: 'system-ui,sans-serif',
+      minWidth: 200, maxHeight: 'calc(100% - 50px)', overflowY: 'auto',
+    }}>
       {/* Header */}
-      <div
-        onClick={() => setCollapsed((c) => !c)}
-        style={{
-          padding: '9px 12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          cursor: 'pointer',
-          borderBottom: collapsed ? 'none' : '0.5px solid rgba(0,0,0,0.08)',
-        }}
-      >
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#0f172a' }}>
-          Legenda
-        </span>
-        <span style={{ fontSize: 10, color: '#94a3b8' }}>
-          {collapsed ? '▲' : '▼'}
-        </span>
+      <div onClick={() => setCollapsed(c => !c)}
+        style={{ padding: '9px 12px', display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', cursor: 'pointer',
+          borderBottom: collapsed ? 'none' : '0.5px solid rgba(0,0,0,0.08)' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#0f172a' }}>Legenda</span>
+        <span style={{ fontSize: 10, color: '#94a3b8' }}>{collapsed ? '▲' : '▼'}</span>
       </div>
 
       {!collapsed && (
         <div style={{ padding: '8px 12px 12px' }}>
+
           {/* ── Weergave ──────────────────────────────────────────────── */}
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 500,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: '#64748b',
-              marginBottom: 5,
-            }}
-          >
-            Weergave
-          </div>
-          {TIERS.map((t) => (
-            <div
-              key={t.key}
-              className="leg-row"
-              onClick={t.toggle}
-              style={{ opacity: t.active ? 1 : 0.25 }}
-            >
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 2,
-                  flexShrink: 0,
-                  background: t.color,
-                  border: '1.5px solid rgba(0,0,0,0.18)',
-                }}
-              />
-              <span style={{ fontSize: 10, color: '#1e293b', flex: 1 }}>
-                {t.label}
-              </span>
-              <span style={{ fontSize: 9, color: '#94a3b8', marginLeft: 4 }}>
-                {t.count}
-              </span>
+          <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase',
+            letterSpacing: '0.06em', color: '#64748b', marginBottom: 5 }}>Weergave</div>
+          {TIERS.map(t => (
+            <div key={t.key} className="leg-row" onClick={t.toggle}
+              style={{ opacity: t.active ? 1 : 0.25 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, flexShrink: 0,
+                background: t.color, border: '1.5px solid rgba(0,0,0,0.18)' }} />
+              <span style={{ fontSize: 10, color: '#1e293b', flex: 1 }}>{t.label}</span>
+              <span style={{ fontSize: 9, color: '#94a3b8', marginLeft: 4 }}>{t.count}</span>
             </div>
           ))}
 
           {/* ── Logiestype ────────────────────────────────────────────── */}
           <div style={secStyle}>Logiestype</div>
-          {allDiscs.map((disc) => (
-            <div
-              key={disc}
-              className="leg-row"
+          {allDiscs.map(disc => (
+            <div key={disc} className="leg-row"
               onClick={() => onToggleDisc(disc)}
-              style={{ opacity: activeDiscs.has(disc) ? 1 : 0.25 }}
-            >
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  flexShrink: 0,
-                  background: DISC_COLORS[disc] || '#888',
-                  border: '1.5px solid rgba(0,0,0,0.18)',
-                }}
-              />
+              style={{ opacity: activeDiscs.has(disc) ? 1 : 0.25 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                background: DISC_COLORS[disc] || '#888', border: '1.5px solid rgba(0,0,0,0.18)' }} />
               <span style={{ fontSize: 10, color: '#1e293b' }}>{disc}</span>
             </div>
           ))}
@@ -5297,24 +1173,12 @@ function MapLegend({
             const mL = (maxDiam - diam) / 2;
             const mR = 8 + mL;
             return (
-              <div
-                key={bucket}
-                className="leg-row"
+              <div key={bucket} className="leg-row"
                 onClick={() => onToggleSize(bucket)}
-                style={{ opacity: activeSizes.has(bucket) ? 1 : 0.25 }}
-              >
-                <div
-                  style={{
-                    width: diam,
-                    height: diam,
-                    borderRadius: '50%',
-                    background: '#475569',
-                    border: '1.5px solid #334155',
-                    flexShrink: 0,
-                    marginLeft: mL,
-                    marginRight: mR,
-                  }}
-                />
+                style={{ opacity: activeSizes.has(bucket) ? 1 : 0.25 }}>
+                <div style={{ width: diam, height: diam, borderRadius: '50%',
+                  background: '#475569', border: '1.5px solid #334155', flexShrink: 0,
+                  marginLeft: mL, marginRight: mR }} />
                 <span style={{ fontSize: 10, color: '#1e293b' }}>{bucket}</span>
               </div>
             );
@@ -5324,66 +1188,31 @@ function MapLegend({
           <div style={secStyle}>
             <span>Overtredingen</span>
             {activeFlags.size > 0 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClearFlags();
-                }}
-                style={{
-                  fontSize: 9,
-                  color: '#1d4ed8',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  fontFamily: 'inherit',
-                }}
-              >
+              <button onClick={e => { e.stopPropagation(); onClearFlags(); }}
+                style={{ fontSize: 9, color: '#1d4ed8', background: 'transparent',
+                  border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
                 Wis filter
               </button>
             )}
           </div>
-          <div
-            style={{
-              fontSize: 10,
-              color: '#94a3b8',
-              marginBottom: 6,
-              lineHeight: 1.4,
-            }}
-          >
+          <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 6, lineHeight: 1.4 }}>
             {activeFlags.size === 0
               ? 'Filter binnen platformdata met overtredingen.'
-              : `${activeFlags.size} filter${
-                  activeFlags.size > 1 ? 's' : ''
-                } actief — OR-logica`}
+              : `${activeFlags.size} filter${activeFlags.size > 1 ? 's' : ''} actief — OR-logica`}
           </div>
-          {FLAG_DEFS.map((f) => {
+          {FLAG_DEFS.map(f => {
             const on = activeFlags.has(f.key);
             return (
-              <div
-                key={f.key}
-                className="leg-row"
+              <div key={f.key} className="leg-row"
                 onClick={() => onToggleFlag(f.key)}
                 style={{
                   opacity: activeFlags.size === 0 || on ? 1 : 0.28,
                   background: on ? `${f.color}12` : 'transparent',
-                  border: on
-                    ? `0.5px solid ${f.color}35`
-                    : '0.5px solid transparent',
+                  border: on ? `0.5px solid ${f.color}35` : '0.5px solid transparent',
                   borderRadius: 4,
-                }}
-              >
-                <AlertTriangle
-                  size={9}
-                  style={{ color: f.color, flexShrink: 0 }}
-                />
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: on ? f.color : '#1e293b',
-                    fontWeight: on ? 500 : 400,
-                  }}
-                >
+                }}>
+                <AlertTriangle size={9} style={{ color: f.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 10, color: on ? f.color : '#1e293b', fontWeight: on ? 500 : 400 }}>
                   {f.label}
                 </span>
               </div>
@@ -5395,154 +1224,136 @@ function MapLegend({
   );
 }
 
-/** Full map page — shows all 233 basisregister logies + platform data overlay. */
-function KaartPage() {
-  const mapDivRef = useRef(null);
-  const mapRef = useRef(null);
-  const markersRef = useRef([]);
+/** Full map page — receives live basisregister + analysis results from App. */
+function KaartPage({ basisregister, basisregisterLoading, analysisResults }) {
+  const mapDivRef   = useRef(null);
+  const mapRef      = useRef(null);
+  const markersRef  = useRef([]);
+  const discsInited = useRef(false);
 
-  // Inject Leaflet CSS from CDN once.
+  // Inject Leaflet CSS once.
   useEffect(() => {
     if (document.getElementById('leaflet-css')) return;
     const link = document.createElement('link');
-    link.id = 'leaflet-css';
-    link.rel = 'stylesheet';
+    link.id = 'leaflet-css'; link.rel = 'stylesheet';
     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
     document.head.appendChild(link);
   }, []);
 
+  // Merge basisregister (all logies) with analysis results (platform subset).
+  const mergedData = useMemo(() => {
+    if (!basisregister) return [];
+    const byId = new Map((analysisResults || []).map(r => [r.id, r]));
+    const result = [];
+    basisregister.forEach(reg => {
+      const p = byId.get(reg.id);
+      if (p) {
+        result.push({ ...reg, ...p, tier: p.tier });
+      } else {
+        result.push({ ...reg, platform: null, flags: null, periodes: null,
+          eersteOv: null, nachtenOv: 0, boekingen: [], conc: null, adresInfo: null,
+          tier: 'register' });
+      }
+    });
+    // Include platform entries not found in basisregister.
+    (analysisResults || []).forEach(r => {
+      if (!basisregister.some(b => b.id === r.id))
+        result.push({ ...r });
+    });
+    return result;
+  }, [basisregister, analysisResults]);
+
   const allDiscs = useMemo(
-    () => [...new Set(MERGED_DATA.map((a) => a.disc))].sort(),
-    []
+    () => [...new Set(mergedData.map(a => a.disc))].sort(),
+    [mergedData]
   );
 
-  // Weergave toggles — which tiers are visible.
   const [showRegister, setShowRegister] = useState(true);
-  const [showClean, setShowClean] = useState(true);
-  const [showFlagged, setShowFlagged] = useState(true);
-
-  const [activeDiscs, setActiveDiscs] = useState(() => new Set(allDiscs));
-  const [activeSizes, setActiveSizes] = useState(() => new Set(SIZE_BUCKETS));
-  const [activeFlags, setActiveFlags] = useState(() => new Set());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showClean,    setShowClean]    = useState(true);
+  const [showFlagged,  setShowFlagged]  = useState(true);
+  const [activeDiscs,  setActiveDiscs]  = useState(new Set());
+  const [activeSizes,  setActiveSizes]  = useState(new Set(SIZE_BUCKETS));
+  const [activeFlags,  setActiveFlags]  = useState(new Set());
+  const [searchQuery,  setSearchQuery]  = useState('');
   const [searchResult, setSearchResult] = useState(null);
-  const [searchError, setSearchError] = useState('');
+  const [searchError,  setSearchError]  = useState('');
 
-  // Tier counts (static — shown in legend).
-  const tierCounts = useMemo(
-    () => ({
-      register: MERGED_DATA.filter((a) => a.tier === 'register').length,
-      clean: MERGED_DATA.filter((a) => a.tier === 'clean').length,
-      flagged: MERGED_DATA.filter((a) => a.tier === 'flagged').length,
-    }),
-    []
-  );
+  useEffect(() => {
+    if (allDiscs.length > 0 && !discsInited.current) {
+      setActiveDiscs(new Set(allDiscs));
+      discsInited.current = true;
+    }
+  }, [allDiscs]);
 
-  // Filtered set of logies to render on the map.
-  const filteredData = useMemo(
-    () =>
-      MERGED_DATA.filter((acc) => {
-        if (!acc.lat || !acc.lon) return false;
-        if (acc.tier === 'register' && !showRegister) return false;
-        if (acc.tier === 'clean' && !showClean) return false;
-        if (acc.tier === 'flagged' && !showFlagged) return false;
-        if (!activeDiscs.has(acc.disc)) return false;
-        if (!activeSizes.has(sizeBucket(acc.units ?? 1))) return false;
-        // Flag filter only restricts within the flagged tier.
-        if (activeFlags.size > 0 && acc.tier === 'flagged') {
-          if (!acc.flags || ![...activeFlags].some((f) => acc.flags[f]))
-            return false;
-        }
-        return true;
-      }),
-    [
-      showRegister,
-      showClean,
-      showFlagged,
-      activeDiscs,
-      activeSizes,
-      activeFlags,
-    ]
-  );
+  const tierCounts = useMemo(() => ({
+    register: mergedData.filter(a => a.tier === 'register').length,
+    clean:    mergedData.filter(a => a.tier === 'clean').length,
+    flagged:  mergedData.filter(a => a.tier === 'flagged').length,
+  }), [mergedData]);
 
-  // ── Initialise Leaflet map once on mount ──────────────────────────────────
+  const filteredData = useMemo(() => mergedData.filter(acc => {
+    if (!acc.lat || !acc.lon) return false;
+    if (acc.tier === 'register' && !showRegister) return false;
+    if (acc.tier === 'clean'    && !showClean)    return false;
+    if (acc.tier === 'flagged'  && !showFlagged)  return false;
+    if (activeDiscs.size > 0 && !activeDiscs.has(acc.disc)) return false;
+    if (!activeSizes.has(sizeBucket(acc.units ?? 1))) return false;
+    if (activeFlags.size > 0 && acc.tier === 'flagged')
+      if (!acc.flags || ![...activeFlags].some(f => acc.flags[f])) return false;
+    return true;
+  }), [mergedData, showRegister, showClean, showFlagged, activeDiscs, activeSizes, activeFlags]);
+
+  // ── Initialise Leaflet map once ───────────────────────────────────────────
   useEffect(() => {
     if (!mapDivRef.current || mapRef.current) return;
-
     const map = L.map(mapDivRef.current, { center: [50.879, 4.703], zoom: 13 });
-
     L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }
+      { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', subdomains: 'abcd', maxZoom: 19 }
     ).addTo(map);
-
-    // Leuven municipal boundary.
     L.geoJSON(LEUVEN_BOUNDARY, {
-      style: {
-        color: '#64748b',
-        weight: 1.5,
-        fillOpacity: 0,
-        dashArray: '5 4',
-      },
+      style: { color: '#64748b', weight: 1.5, fillOpacity: 0, dashArray: '5 4' },
     }).addTo(map);
-
     mapRef.current = map;
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      markersRef.current = [];
-    };
+    return () => { map.remove(); mapRef.current = null; markersRef.current = []; };
   }, []);
 
-  // ── Redraw markers whenever filters or search result change ───────────────
+  // ── Redraw markers on filter/search change ────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
-
-    markersRef.current.forEach((m) => m.remove());
+    markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    // Always include searched logies even if filtered out.
     const toShow = [...filteredData];
-    if (searchResult && !filteredData.some((a) => a.id === searchResult.id)) {
-      const found = MERGED_DATA.find((a) => a.id === searchResult.id);
+    if (searchResult && !filteredData.some(a => a.id === searchResult.id)) {
+      const found = mergedData.find(a => a.id === searchResult.id);
       if (found?.lat) toShow.push(found);
     }
 
-    // Render basisregister-only markers first so platform markers sit on top.
     const sorted = [
-      ...toShow.filter((a) => a.tier === 'register'),
-      ...toShow.filter((a) => a.tier !== 'register'),
+      ...toShow.filter(a => a.tier === 'register'),
+      ...toShow.filter(a => a.tier !== 'register'),
     ];
 
-    sorted.forEach((acc) => {
-      const isSelected = searchResult?.id === acc.id;
-      const color = DISC_COLORS[acc.disc] || '#888888';
-      const radius = sizeRadius(acc.units ?? 1);
-
-      // Visual weight by tier: register = translucent, clean = medium, flagged = full.
-      const fillOpacity =
-        acc.tier === 'register' ? 0.35 : acc.tier === 'clean' ? 0.65 : 0.85;
-      const weight =
-        acc.tier === 'register' ? 1 : acc.tier === 'clean' ? 1.5 : 2;
+    sorted.forEach(acc => {
+      const isSelected  = searchResult?.id === acc.id;
+      const color       = DISC_COLORS[acc.disc] || '#888888';
+      const radius      = sizeRadius(acc.units ?? 1);
+      const fillOpacity = acc.tier === 'register' ? 0.35 : acc.tier === 'clean' ? 0.65 : 0.85;
+      const weight      = acc.tier === 'register' ? 1    : acc.tier === 'clean' ? 1.5  : 2;
 
       const marker = L.circleMarker([acc.lat, acc.lon], {
-        color: isSelected ? '#0f172a' : color,
-        fillColor: color,
+        color:       isSelected ? '#0f172a' : color,
+        fillColor:   color,
         fillOpacity: isSelected ? 0.95 : fillOpacity,
-        weight: isSelected ? 3.5 : weight,
+        weight:      isSelected ? 3.5  : weight,
         radius,
-        dashArray: isSelected ? '5 3' : null,
+        dashArray:   isSelected ? '5 3' : null,
       });
-
       marker.bindPopup(buildPopupHTML(acc), { maxWidth: 320, minWidth: 240 });
       marker.bindTooltip(buildTooltipHTML(acc));
       marker.addTo(mapRef.current);
       markersRef.current.push(marker);
-
       if (isSelected) setTimeout(() => marker.openPopup(), 1350);
     });
   }, [filteredData, searchResult]);
@@ -5555,177 +1366,88 @@ function KaartPage() {
 
   const handleSearch = () => {
     const q = searchQuery.trim();
-    setSearchError('');
-    setSearchResult(null);
+    setSearchError(''); setSearchResult(null);
     if (!q) return;
-    const found = MERGED_DATA.find((a) => String(a.id) === q);
-    if (found?.lat) {
-      setSearchResult({ id: found.id, position: [found.lat, found.lon] });
-    } else {
-      setSearchError(
-        found
-          ? `Logies #${q} heeft geen coördinaten.`
-          : `Registratienummer ${q} niet gevonden.`
-      );
-    }
+    const found = mergedData.find(a => String(a.id) === q);
+    if (found?.lat) setSearchResult({ id: found.id, position: [found.lat, found.lon] });
+    else setSearchError(`Registratienummer ${q} niet gevonden.`);
   };
 
-  const clearSearch = () => {
-    setSearchResult(null);
-    setSearchQuery('');
-    setSearchError('');
-  };
-
+  const clearSearch = () => { setSearchResult(null); setSearchQuery(''); setSearchError(''); };
   const toggle = (setter, key) =>
-    setter((prev) => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
+    setter(prev => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next; });
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '0 20px 20px',
-        height: 'calc(100vh - 118px)',
-      }}
-    >
-      {/* ── Search bar ────────────────────────────────────────────────── */}
-      <div
-        style={{
-          padding: '10px 0 10px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <Search
-            size={12}
-            style={{
-              position: 'absolute',
-              left: 10,
-              color: V.txt2,
-              pointerEvents: 'none',
-            }}
-          />
-          <input
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setSearchError('');
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '0 20px 20px',
+      height: 'calc(100vh - 118px)' }}>
+
+      {/* Search bar */}
+      <div style={{ padding: '10px 0', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Search size={12} style={{ position: 'absolute', left: 10, color: V.txt2, pointerEvents: 'none' }} />
+          <input value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setSearchError(''); }}
+            onKeyDown={e => e.key === 'Enter' && handleSearch()}
             placeholder="Registratienummer zoeken op kaart…"
-            style={{
-              paddingLeft: 30,
-              paddingRight: 12,
-              paddingTop: 5,
-              paddingBottom: 5,
-              border: `0.5px solid ${V.b}`,
-              borderRadius: 20,
-              fontSize: 12,
-              fontFamily: 'inherit',
-              background: V.bg,
-              color: V.txt,
-              width: 265,
-              outline: 'none',
-            }}
-          />
+            style={{ paddingLeft: 30, paddingRight: 12, paddingTop: 5, paddingBottom: 5,
+              border: `0.5px solid ${V.b}`, borderRadius: 20, fontSize: 12,
+              fontFamily: 'inherit', background: V.bg, color: V.txt, width: 265, outline: 'none' }} />
         </div>
-        <button
-          onClick={handleSearch}
-          style={{
-            padding: '5px 14px',
-            borderRadius: 20,
-            fontSize: 12,
-            fontFamily: 'inherit',
-            border: `0.5px solid ${V.infoBd}`,
-            background: V.infoBg,
-            color: V.info,
-            cursor: 'pointer',
-          }}
-        >
+        <button onClick={handleSearch}
+          style={{ padding: '5px 14px', borderRadius: 20, fontSize: 12, fontFamily: 'inherit',
+            border: `0.5px solid ${V.infoBd}`, background: V.infoBg, color: V.info, cursor: 'pointer' }}>
           Zoek
         </button>
         {searchResult && (
-          <button
-            onClick={clearSearch}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '5px 10px',
-              borderRadius: 20,
-              fontSize: 11,
-              fontFamily: 'inherit',
-              border: `0.5px solid ${V.b}`,
-              background: 'transparent',
-              color: V.txt2,
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={clearSearch}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px',
+              borderRadius: 20, fontSize: 11, fontFamily: 'inherit',
+              border: `0.5px solid ${V.b}`, background: 'transparent', color: V.txt2, cursor: 'pointer' }}>
             <X size={11} /> Wis
           </button>
         )}
-        {searchResult && !searchError && (
-          <span style={{ fontSize: 11, color: V.ok }}>
-            &#8599; Vliegend naar #{searchResult.id}
-          </span>
-        )}
-        {searchError && (
-          <span style={{ fontSize: 11, color: V.danger }}>{searchError}</span>
-        )}
+        {searchResult && !searchError && <span style={{ fontSize: 11, color: V.ok }}>↗ Vliegend naar #{searchResult.id}</span>}
+        {searchError  && <span style={{ fontSize: 11, color: V.danger }}>{searchError}</span>}
         <span style={{ marginLeft: 'auto', fontSize: 11, color: V.txt2 }}>
-          {filteredData.length} / {MERGED_DATA.filter((a) => a.lat).length}{' '}
-          logies zichtbaar
+          {basisregisterLoading
+            ? 'Basisregister laden…'
+            : `${filteredData.length} / ${mergedData.filter(a => a.lat).length} logies zichtbaar`}
         </span>
       </div>
 
-      {/* ── Map + legend wrapper ───────────────────────────────────────── */}
-      <div
-        style={{
-          flex: 1,
-          position: 'relative',
-          borderRadius: V.rl,
-          overflow: 'hidden',
-          border: `0.5px solid ${V.b}`,
-          boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
-        }}
-      >
+      {/* Map + legend */}
+      <div style={{ flex: 1, position: 'relative', borderRadius: V.rl,
+        overflow: 'hidden', border: `0.5px solid ${V.b}`, boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
+
+        {basisregisterLoading && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 2000, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(3px)' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: V.txt2, marginBottom: 5 }}>Basisregister ophalen van Toerisme Vlaanderen…</div>
+              <div style={{ fontSize: 11, color: V.txt2, opacity: 0.6 }}>Dit duurt enkele seconden.</div>
+            </div>
+          </div>
+        )}
+
         <div ref={mapDivRef} style={{ height: '100%', width: '100%' }} />
 
         <MapLegend
-          allDiscs={allDiscs}
-          activeDiscs={activeDiscs}
-          activeSizes={activeSizes}
-          activeFlags={activeFlags}
-          showRegister={showRegister}
-          showClean={showClean}
-          showFlagged={showFlagged}
-          counts={tierCounts}
-          onToggleDisc={(key) => toggle(setActiveDiscs, key)}
-          onToggleSize={(key) => toggle(setActiveSizes, key)}
-          onToggleFlag={(key) => toggle(setActiveFlags, key)}
+          allDiscs={allDiscs} activeDiscs={activeDiscs} activeSizes={activeSizes} activeFlags={activeFlags}
+          showRegister={showRegister} showClean={showClean} showFlagged={showFlagged} counts={tierCounts}
+          onToggleDisc={key => toggle(setActiveDiscs, key)}
+          onToggleSize={key => toggle(setActiveSizes, key)}
+          onToggleFlag={key => toggle(setActiveFlags, key)}
           onClearFlags={() => setActiveFlags(new Set())}
-          onToggleRegister={() => setShowRegister((v) => !v)}
-          onToggleClean={() => setShowClean((v) => !v)}
-          onToggleFlagged={() => setShowFlagged((v) => !v)}
+          onToggleRegister={() => setShowRegister(v => !v)}
+          onToggleClean={()    => setShowClean(v => !v)}
+          onToggleFlagged={()  => setShowFlagged(v => !v)}
         />
       </div>
 
       <div style={{ marginTop: 8, fontSize: 11, color: V.txt2, opacity: 0.75 }}>
-        {MERGED_DATA.length} logies uit het basisregister · Klik op een
-        markering voor details · Gebruik de legenda rechtsonder om te filteren
+        {mergedData.length > 0 ? `${mergedData.length} logies uit actueel basisregister · ` : ''}
+        Klik op een markering voor details · Legenda rechtsonder om te filteren
       </div>
     </div>
   );
@@ -5744,192 +1466,180 @@ const FLAG_COLS = [
 ];
 
 export default function App() {
-  const [page, setPage] = useState('dashboard');
+  const [page,     setPage]     = useState('dashboard');
   const [selected, setSelected] = useState(null);
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const [filter,   setFilter]   = useState('all');
+  const [search,   setSearch]   = useState('');
 
-  // Clear selected row when switching away from dashboard.
+  // ── Live basisregister — fetched on mount, shared by dashboard + map ──────
+  const [basisregister,      setBasisregister]      = useState(null);
+  const [basisregisterError, setBasisregisterError] = useState('');
+
   useEffect(() => {
-    if (page !== 'dashboard') setSelected(null);
-  }, [page]);
+    fetch('/api/basisregister')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => { if (data.error) throw new Error(data.error); setBasisregister(data); })
+      .catch(err => setBasisregisterError(err.message));
+  }, []);
 
-  const stats = useMemo(
-    () => ({
-      total: DATA.length,
-      flagged: DATA.filter((a) => Object.values(a.flags).some(Boolean)).length,
-      ov: DATA.filter((a) => a.flags.ov).length,
-      conc: DATA.filter((a) => a.flags.un || a.flags.ca).length,
-      nk: DATA.filter((a) => a.flags.nk).length,
-      ad: DATA.filter((a) => a.flags.ad).length,
-    }),
-    []
-  );
+  const basisregisterLoading = !basisregister && !basisregisterError;
+
+  // ── Reservation data — uploaded by user, analysed against live register ───
+  const [analysisResults, setAnalysisResults] = useState(null);
+  const [analysisFileName, setAnalysisFileName] = useState('');
+  const [analysisError, setAnalysisError] = useState('');
+  const [pendingFile, setPendingFile] = useState(null); // queued if register not yet loaded
+
+  const runAnalysisWithFile = (file, register) => {
+    file.arrayBuffer().then(ab => {
+      try {
+        const wb   = XLSX.read(ab, { type: 'array', cellDates: true });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws);
+        const results = runAnalysis(rows, register);
+        if (results.length === 0) throw new Error('Geen geldige boekingsrijen gevonden. Controleer de kolomnamen.');
+        setAnalysisResults(results);
+        setAnalysisFileName(file.name);
+        setAnalysisError('');
+      } catch (err) {
+        setAnalysisError(err.message);
+      }
+    });
+  };
+
+  const handleFileSelect = (file) => {
+    if (!file) return;
+    setAnalysisError('');
+    if (basisregister) {
+      runAnalysisWithFile(file, basisregister);
+    } else {
+      setPendingFile(file); // run as soon as register arrives
+    }
+  };
+
+  // Run pending analysis once basisregister loads.
+  useEffect(() => {
+    if (basisregister && pendingFile) {
+      runAnalysisWithFile(pendingFile, basisregister);
+      setPendingFile(null);
+    }
+  }, [basisregister]);
+
+  useEffect(() => { if (page !== 'dashboard') setSelected(null); }, [page]);
+
+  // Dashboard stats derived from analysis results.
+  const DATA = analysisResults || [];
+
+  const stats = useMemo(() => ({
+    total:   DATA.length,
+    flagged: DATA.filter(a => Object.values(a.flags).some(Boolean)).length,
+    ov:      DATA.filter(a => a.flags.ov).length,
+    conc:    DATA.filter(a => a.flags.un || a.flags.ca).length,
+    nk:      DATA.filter(a => a.flags.nk).length,
+    ad:      DATA.filter(a => a.flags.ad).length,
+  }), [DATA]);
 
   const filtered = useMemo(() => {
     const fm = {
-      flagged: (a) => Object.values(a.flags).some(Boolean),
-      ov: (a) => a.flags.ov,
-      un: (a) => a.flags.un,
-      ca: (a) => a.flags.ca,
-      nk: (a) => a.flags.nk,
-      ad: (a) => a.flags.ad,
+      flagged: a => Object.values(a.flags).some(Boolean),
+      ov: a => a.flags.ov, un: a => a.flags.un, ca: a => a.flags.ca,
+      nk: a => a.flags.nk, ad: a => a.flags.ad,
     };
     let l = DATA;
     if (fm[filter]) l = l.filter(fm[filter]);
     if (search) {
       const q = search.toLowerCase();
-      l = l.filter(
-        (a) =>
-          a.naam.toLowerCase().includes(q) ||
-          a.adres.toLowerCase().includes(q) ||
-          String(a.id).includes(q)
+      l = l.filter(a =>
+        a.naam.toLowerCase().includes(q) ||
+        a.adres.toLowerCase().includes(q) ||
+        String(a.id).includes(q)
       );
     }
     return l;
-  }, [filter, search]);
+  }, [DATA, filter, search]);
 
   useEffect(() => {
-    if (selected && !filtered.find((a) => a.id === selected.id))
-      setSelected(null);
+    if (selected && !filtered.find(a => a.id === selected.id)) setSelected(null);
   }, [filtered]);
 
   const FBTNS = [
-    { id: 'all', label: 'Alle' },
-    { id: 'flagged', label: 'Gemarkeerd', count: stats.flagged },
-    { id: 'ov', label: '4×30', count: stats.ov },
-    { id: 'un', label: 'Units', count: DATA.filter((a) => a.flags.un).length },
-    {
-      id: 'ca',
-      label: 'Capaciteit',
-      count: DATA.filter((a) => a.flags.ca).length,
-    },
-    { id: 'nk', label: 'Onbekend', count: stats.nk },
-    { id: 'ad', label: 'Adres', count: stats.ad },
+    { id: 'all',     label: 'Alle' },
+    { id: 'flagged', label: 'Gemarkeerd',  count: stats.flagged },
+    { id: 'ov',      label: '4×30',      count: stats.ov   },
+    { id: 'un',      label: 'Units',       count: DATA.filter(a => a.flags.un).length },
+    { id: 'ca',      label: 'Capaciteit',  count: DATA.filter(a => a.flags.ca).length },
+    { id: 'nk',      label: 'Onbekend',    count: stats.nk },
+    { id: 'ad',      label: 'Adres',       count: stats.ad },
   ];
 
   const STAT_CARDS = [
-    {
-      label: 'Gecontroleerd',
-      value: stats.total,
-      sub: 'accommodaties',
-      c: V.txt,
-    },
-    {
-      label: 'Vereisen opvolging',
-      value: stats.flagged,
-      sub: 'met minstens 1 vlag',
-      c: V.warn,
-    },
-    {
-      label: '4×30-overtredingen',
-      value: stats.ov,
-      sub: 'mogelijke vergunningsvereiste',
-      c: V.danger,
-    },
-    {
-      label: 'Gelijktijdigheid',
-      value: stats.conc,
-      sub: 'units of cap. overschreden',
-      c: V.warn,
-    },
-    {
-      label: 'Niet gekend',
-      value: stats.nk,
-      sub: 'in basisregister',
-      c: V.info,
-    },
-    {
-      label: 'Adresafwijkingen',
-      value: stats.ad,
-      sub: 'nazicht vereist',
-      c: V.info,
-    },
+    { label: 'Gecontroleerd',      value: stats.total,   sub: 'accommodaties',                 c: V.txt    },
+    { label: 'Vereisen opvolging', value: stats.flagged, sub: 'met minstens 1 vlag',           c: V.warn   },
+    { label: '4×30-overtredingen', value: stats.ov, sub: 'mogelijke vergunningsvereiste', c: V.danger },
+    { label: 'Gelijktijdigheid',   value: stats.conc,    sub: 'units of cap. overschreden',    c: V.warn   },
+    { label: 'Niet gekend',        value: stats.nk,      sub: 'in basisregister',              c: V.info   },
+    { label: 'Adresafwijkingen',   value: stats.ad,      sub: 'nazicht vereist',               c: V.info   },
   ];
 
   const PAGES = [
-    { id: 'dashboard', label: 'Dashboard', Icon: Building2 },
-    { id: 'kaart', label: 'Kaartoverzicht', Icon: MapPin },
+    { id: 'dashboard', label: 'Dashboard',      Icon: Building2 },
+    { id: 'kaart',     label: 'Kaartoverzicht', Icon: MapPin    },
   ];
+
+  const today = new Date().toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div style={{ fontFamily: 'var(--font-sans, system-ui, sans-serif)' }}>
       <style>{CSS}</style>
 
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          background: V.bg2,
-          padding: '12px 20px 0',
-          borderBottom: `0.5px solid ${V.b}`,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 10,
-          }}
-        >
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div style={{ background: V.bg2, padding: '12px 20px 0', borderBottom: `0.5px solid ${V.b}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                background: V.warnBg,
-                borderRadius: V.r,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <div style={{ width: 34, height: 34, background: V.warnBg, borderRadius: V.r,
+              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Building2 size={18} style={{ color: V.warn }} />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: V.txt }}>
-                Controle logiesdecreet — 4×30-regel
-              </div>
-              <div style={{ fontSize: 11, color: V.txt2, marginTop: 1 }}>
-                Stad Leuven · Handhaving logiesbeleid
-              </div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: V.txt }}>Controle logiesdecreet — 4×30-regel</div>
+              <div style={{ fontSize: 11, color: V.txt2, marginTop: 1 }}>Stad Leuven · Handhaving logiesbeleid</div>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: V.txt }}>
-              Controlerapport · 08 juni 2026
-            </div>
-            <div style={{ fontSize: 11, color: V.txt2 }}>
-              Basisregister bijgewerkt · 9 accommodaties geanalyseerd
+          <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 12 }}>
+            {analysisResults && (
+              <label style={{ fontSize: 11, color: V.info, cursor: 'pointer', padding: '4px 10px',
+                border: `0.5px solid ${V.infoBd}`, borderRadius: 20, background: V.infoBg }}>
+                Nieuw bestand
+                <input type="file" accept=".xlsx" style={{ display: 'none' }}
+                  onChange={e => handleFileSelect(e.target.files[0])} />
+              </label>
+            )}
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: V.txt }}>
+                {analysisFileName ? `${analysisFileName}` : `Controlerapport · ${today}`}
+              </div>
+              <div style={{ fontSize: 11, color: V.txt2 }}>
+                {basisregisterLoading
+                  ? 'Basisregister ophalen…'
+                  : basisregisterError
+                    ? `Fout: ${basisregisterError}`
+                    : `${basisregister?.length || 0} logies in basisregister`}
+                {analysisResults ? ` · ${analysisResults.length} geanalyseerd` : ''}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Page tabs */}
         <div style={{ display: 'flex', gap: 2 }}>
-          {PAGES.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPage(p.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '7px 14px',
-                border: 'none',
-                background: 'transparent',
-                borderBottom:
-                  page === p.id
-                    ? `2px solid ${V.info}`
-                    : '2px solid transparent',
+          {PAGES.map(p => (
+            <button key={p.id} onClick={() => setPage(p.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+                border: 'none', background: 'transparent',
+                borderBottom: page === p.id ? `2px solid ${V.info}` : '2px solid transparent',
                 color: page === p.id ? V.info : V.txt2,
-                fontSize: 13,
-                fontWeight: page === p.id ? 500 : 400,
-                fontFamily: 'inherit',
-                cursor: 'pointer',
-                transition: 'color 0.12s, border-color 0.12s',
-              }}
-            >
+                fontSize: 13, fontWeight: page === p.id ? 500 : 400,
+                fontFamily: 'inherit', cursor: 'pointer', transition: 'color 0.12s, border-color 0.12s' }}>
               <p.Icon size={13} />
               {p.label}
             </button>
@@ -5937,346 +1647,210 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Dashboard page ────────────────────────────────────────────── */}
+      {/* ── Dashboard page ───────────────────────────────────────────────── */}
       {page === 'dashboard' && (
         <>
-          {/* Stats grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(6,1fr)',
-              gap: 10,
-              padding: '14px 20px 0',
-            }}
-          >
-            {STAT_CARDS.map((s, i) => (
-              <div
-                key={i}
-                style={{
-                  background: V.bg2,
-                  borderRadius: V.r,
-                  padding: '12px 14px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    color: V.txt2,
-                    marginBottom: 6,
-                  }}
-                >
-                  {s.label}
-                </div>
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 500,
-                    color: s.c,
-                    lineHeight: 1,
-                    marginBottom: 4,
-                  }}
-                >
-                  {s.value}
-                </div>
-                <div style={{ fontSize: 11, color: V.txt2, lineHeight: 1.3 }}>
-                  {s.sub}
-                </div>
-              </div>
-            ))}
-          </div>
+          {!analysisResults ? (
+            /* ── Upload screen ──────────────────────────────────────────── */
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+              minHeight: 'calc(100vh - 118px)', padding: 40 }}>
+              <div style={{ maxWidth: 480, width: '100%', textAlign: 'center' }}>
 
-          {/* Table + detail panel */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 14,
-              padding: '14px 20px 20px',
-              alignItems: 'flex-start',
-            }}
-          >
-            {/* Table panel */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {/* Filter + search bar */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  marginBottom: 10,
-                  flexWrap: 'wrap',
-                }}
-              >
-                {FBTNS.map((fb) => {
-                  const a = filter === fb.id;
-                  return (
-                    <button
-                      key={fb.id}
-                      onClick={() => setFilter(a ? 'all' : fb.id)}
-                      style={{
-                        padding: '4px 12px',
-                        borderRadius: 20,
-                        fontSize: 12,
-                        fontWeight: a ? 500 : 400,
-                        cursor: 'pointer',
-                        border: `0.5px solid ${a ? V.infoBd : V.b}`,
-                        background: a ? V.infoBg : V.bg,
-                        color: a ? V.info : V.txt2,
-                        fontFamily: 'inherit',
-                        transition: 'all 0.12s',
-                      }}
-                    >
-                      {fb.label}
-                      {fb.count !== undefined && (
-                        <span
-                          style={{
-                            marginLeft: 6,
-                            padding: '1px 5px',
-                            borderRadius: 10,
-                            fontSize: 10,
-                            background: a ? 'rgba(0,0,0,0.06)' : V.bg2,
-                            color: a ? V.info : V.txt2,
-                          }}
-                        >
-                          {fb.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-                <div style={{ marginLeft: 'auto', position: 'relative' }}>
-                  <Search
-                    size={12}
-                    style={{
-                      position: 'absolute',
-                      left: 10,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: V.txt2,
-                    }}
-                  />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Zoek op naam of adres…"
-                    style={{
-                      padding: '4px 14px 4px 28px',
-                      border: `0.5px solid ${V.b}`,
-                      borderRadius: 20,
-                      fontSize: 12,
-                      fontFamily: 'inherit',
-                      background: V.bg,
-                      color: V.txt,
-                      width: 200,
-                      outline: 'none',
-                    }}
-                  />
+                {/* Basisregister status */}
+                <div style={{ marginBottom: 28, padding: '10px 16px', borderRadius: V.r,
+                  background: basisregisterError ? V.dangerBg : basisregisterLoading ? V.bg2 : V.okBg,
+                  border: `0.5px solid ${basisregisterError ? V.dangerBd : basisregisterLoading ? V.b : V.okBd}`,
+                  fontSize: 12, color: basisregisterError ? V.danger : basisregisterLoading ? V.txt2 : V.ok }}>
+                  {basisregisterLoading && '⌛ Basisregister ophalen van Toerisme Vlaanderen…'}
+                  {basisregisterError   && `⚠ Basisregister niet bereikbaar: ${basisregisterError}`}
+                  {basisregister        && `✓ Basisregister geladen — ${basisregister.length} Leuvense logies (actuele versie)`}
                 </div>
-              </div>
 
-              {/* Table */}
-              <div
-                style={{
-                  background: V.bg,
-                  borderRadius: V.rl,
-                  border: `0.5px solid ${V.b}`,
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns:
-                      'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 36px 36px 36px 36px 36px',
-                    padding: '8px 16px',
-                    background: V.bg2,
-                    borderBottom: `0.5px solid ${V.b}`,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: V.txt2,
-                    gap: 8,
-                  }}
-                >
-                  <div>Logies</div>
-                  <div>Platform</div>
-                  <div>Type</div>
-                  {FLAG_COLS.map((fc) => (
-                    <div
-                      key={fc.key}
-                      title={fc.title}
-                      style={{ textAlign: 'center' }}
-                    >
-                      {fc.title}
+                {/* Upload zone */}
+                <div style={{ border: `1.5px dashed ${V.b}`, borderRadius: V.rl, padding: '40px 32px',
+                  background: V.bg2, marginBottom: 20 }}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); handleFileSelect(e.dataTransfer.files[0]); }}>
+                  <Building2 size={36} style={{ color: V.b, marginBottom: 16 }} />
+                  <div style={{ fontSize: 15, fontWeight: 500, color: V.txt, marginBottom: 8 }}>
+                    Upload reservatiedata
+                  </div>
+                  <div style={{ fontSize: 12, color: V.txt2, marginBottom: 20, lineHeight: 1.6 }}>
+                    Sleep een .xlsx-bestand hierin, of klik om te bladeren.
+                  </div>
+                  <label style={{ display: 'inline-block', padding: '8px 20px', borderRadius: 20,
+                    fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
+                    border: `0.5px solid ${V.infoBd}`, background: V.infoBg, color: V.info,
+                    opacity: basisregisterLoading ? 0.5 : 1 }}>
+                    Selecteer bestand (.xlsx)
+                    <input type="file" accept=".xlsx" style={{ display: 'none' }}
+                      disabled={basisregisterLoading}
+                      onChange={e => handleFileSelect(e.target.files[0])} />
+                  </label>
+                  {analysisError && (
+                    <div style={{ marginTop: 14, fontSize: 12, color: V.danger }}>{analysisError}</div>
+                  )}
+                  {pendingFile && basisregisterLoading && (
+                    <div style={{ marginTop: 14, fontSize: 12, color: V.warn }}>
+                      Bestand ontvangen — analyse start zodra basisregister geladen is.
+                    </div>
+                  )}
+                </div>
+
+                {/* Expected columns */}
+                <div style={{ textAlign: 'left', fontSize: 11, color: V.txt2, lineHeight: 1.8 }}>
+                  <div style={{ fontWeight: 500, marginBottom: 4, color: V.txt }}>Verwachte kolomnamen (eerste tabblad):</div>
+                  {Object.keys(EXCEL_COL).map(k => (
+                    <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ color: V.ok }}>&#10003;</span>
+                      <code style={{ fontSize: 11, background: V.bg2, padding: '1px 5px', borderRadius: 3,
+                        border: `0.5px solid ${V.b}` }}>{EXCEL_COL[k === 'reg' ? 'reg' : k]}</code>
                     </div>
                   ))}
-                </div>
-
-                {filtered.length === 0 ? (
-                  <div
-                    style={{
-                      padding: 40,
-                      textAlign: 'center',
-                      color: V.txt2,
-                      fontSize: 13,
-                    }}
-                  >
-                    Geen resultaten gevonden.
+                  <div style={{ marginTop: 12, fontSize: 11, opacity: 0.7 }}>
+                    Analyse loopt volledig in de browser — bestanden worden niet opgeslagen of verzonden.
                   </div>
-                ) : (
-                  filtered.map((acc) => {
-                    const sel = selected?.id === acc.id;
-                    return (
-                      <div
-                        key={acc.id}
-                        onClick={() => setSelected(sel ? null : acc)}
-                        onMouseEnter={(e) => {
-                          if (!sel) e.currentTarget.style.background = V.bg2;
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!sel) e.currentTarget.style.background = V.bg;
-                        }}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns:
-                            'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 36px 36px 36px 36px 36px',
-                          padding: '11px 16px',
-                          paddingLeft: sel ? '13px' : '16px',
-                          borderBottom: `0.5px solid ${V.b}`,
-                          borderLeft: sel
-                            ? `3px solid ${V.info}`
-                            : '3px solid transparent',
-                          cursor: 'pointer',
-                          background: sel ? V.infoBg : V.bg,
-                          alignItems: 'center',
-                          gap: 8,
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 500,
-                              color: V.txt,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {acc.naam}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: V.txt2,
-                              marginTop: 1,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {acc.adres}
-                          </div>
-                        </div>
-                        <div>
-                          <span
-                            style={{
-                              padding: '2px 8px',
-                              borderRadius: V.r,
-                              fontSize: 11,
-                              fontWeight: 500,
-                              background: V.bg2,
-                              color: V.txt2,
-                              border: `0.5px solid ${V.b}`,
-                            }}
-                          >
-                            {acc.platform}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 11, color: V.txt2 }}>
-                          {acc.disc}
-                        </div>
-                        {FLAG_COLS.map((fc) => (
-                          <div
-                            key={fc.key}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            {acc.flags[fc.key] ? (
-                              <fc.Icon size={14} style={{ color: fc.color }} />
-                            ) : (
-                              <CheckCircle size={14} style={{ color: V.ok }} />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  fontSize: 11,
-                  color: V.txt2,
-                  lineHeight: 1.5,
-                  opacity: 0.8,
-                }}
-              >
-                Vlaggen zijn signalen voor menselijk nazicht, geen juridische
-                conclusies. Elke gemarkeerde logies vereist beoordeling door een
-                bevoegde medewerker.
+                </div>
               </div>
             </div>
-
-            {/* Detail panel or placeholder */}
-            {selected ? (
-              <DetailPanel acc={selected} onClose={() => setSelected(null)} />
-            ) : (
-              <div
-                style={{
-                  width: 400,
-                  flexShrink: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '48px 24px',
-                  textAlign: 'center',
-                  background: V.bg,
-                  borderRadius: V.rl,
-                  border: `0.5px dashed ${V.b}`,
-                }}
-              >
-                <Building2 size={36} style={{ color: V.b, marginBottom: 14 }} />
-                <div style={{ fontSize: 13, fontWeight: 500, color: V.txt2 }}>
-                  Selecteer een accommodatie
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: V.txt2,
-                    marginTop: 6,
-                    lineHeight: 1.6,
-                    opacity: 0.7,
-                  }}
-                >
-                  Klik op een rij in de tabel om de details, periodeanalyse en
-                  boekingen te bekijken.
-                </div>
+          ) : (
+            /* ── Results: stats + table + detail ───────────────────────── */
+            <>
+              {/* Stats grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 10, padding: '14px 20px 0' }}>
+                {STAT_CARDS.map((s, i) => (
+                  <div key={i} style={{ background: V.bg2, borderRadius: V.r, padding: '12px 14px' }}>
+                    <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.06em',
+                      textTransform: 'uppercase', color: V.txt2, marginBottom: 6 }}>{s.label}</div>
+                    <div style={{ fontSize: 24, fontWeight: 500, color: s.c, lineHeight: 1, marginBottom: 4 }}>{s.value}</div>
+                    <div style={{ fontSize: 11, color: V.txt2, lineHeight: 1.3 }}>{s.sub}</div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+
+              {/* Table + detail panel */}
+              <div style={{ display: 'flex', gap: 14, padding: '14px 20px 20px', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Filter + search */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexWrap: 'wrap' }}>
+                    {FBTNS.map(fb => {
+                      const a = filter === fb.id;
+                      return (
+                        <button key={fb.id} onClick={() => setFilter(a ? 'all' : fb.id)}
+                          style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12,
+                            fontWeight: a ? 500 : 400, cursor: 'pointer',
+                            border: `0.5px solid ${a ? V.infoBd : V.b}`,
+                            background: a ? V.infoBg : V.bg, color: a ? V.info : V.txt2,
+                            fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                          {fb.label}
+                          {fb.count !== undefined && (
+                            <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 10,
+                              fontSize: 10, background: a ? 'rgba(0,0,0,0.06)' : V.bg2,
+                              color: a ? V.info : V.txt2 }}>{fb.count}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    <div style={{ marginLeft: 'auto', position: 'relative' }}>
+                      <Search size={12} style={{ position: 'absolute', left: 10, top: '50%',
+                        transform: 'translateY(-50%)', color: V.txt2 }} />
+                      <input value={search} onChange={e => setSearch(e.target.value)}
+                        placeholder="Zoek op naam of adres…"
+                        style={{ padding: '4px 14px 4px 28px', border: `0.5px solid ${V.b}`,
+                          borderRadius: 20, fontSize: 12, fontFamily: 'inherit',
+                          background: V.bg, color: V.txt, width: 200, outline: 'none' }} />
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div style={{ background: V.bg, borderRadius: V.rl, border: `0.5px solid ${V.b}`, overflow: 'hidden' }}>
+                    <div style={{ display: 'grid',
+                      gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 36px 36px 36px 36px 36px',
+                      padding: '8px 16px', background: V.bg2, borderBottom: `0.5px solid ${V.b}`,
+                      fontSize: 11, fontWeight: 500, color: V.txt2, gap: 8 }}>
+                      <div>Logies</div><div>Platform</div><div>Type</div>
+                      {FLAG_COLS.map(fc => (
+                        <div key={fc.key} title={fc.title} style={{ textAlign: 'center' }}>{fc.title}</div>
+                      ))}
+                    </div>
+
+                    {filtered.length === 0 ? (
+                      <div style={{ padding: 40, textAlign: 'center', color: V.txt2, fontSize: 13 }}>
+                        Geen resultaten gevonden.
+                      </div>
+                    ) : filtered.map(acc => {
+                      const sel = selected?.id === acc.id;
+                      return (
+                        <div key={acc.id}
+                          onClick={() => setSelected(sel ? null : acc)}
+                          onMouseEnter={e => { if (!sel) e.currentTarget.style.background = V.bg2; }}
+                          onMouseLeave={e => { if (!sel) e.currentTarget.style.background = V.bg; }}
+                          style={{ display: 'grid',
+                            gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) 36px 36px 36px 36px 36px',
+                            padding: '11px 16px', paddingLeft: sel ? '13px' : '16px',
+                            borderBottom: `0.5px solid ${V.b}`,
+                            borderLeft: sel ? `3px solid ${V.info}` : '3px solid transparent',
+                            cursor: 'pointer', background: sel ? V.infoBg : V.bg,
+                            alignItems: 'center', gap: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 500, color: V.txt,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.naam}</div>
+                            <div style={{ fontSize: 11, color: V.txt2, marginTop: 1,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.adres}</div>
+                          </div>
+                          <div>
+                            <span style={{ padding: '2px 8px', borderRadius: V.r, fontSize: 11,
+                              fontWeight: 500, background: V.bg2, color: V.txt2, border: `0.5px solid ${V.b}` }}>
+                              {acc.platform}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 11, color: V.txt2 }}>{acc.disc}</div>
+                          {FLAG_COLS.map(fc => (
+                            <div key={fc.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {acc.flags[fc.key]
+                                ? <fc.Icon size={14} style={{ color: fc.color }} />
+                                : <CheckCircle size={14} style={{ color: V.ok }} />}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ marginTop: 10, fontSize: 11, color: V.txt2, lineHeight: 1.5, opacity: 0.8 }}>
+                    Vlaggen zijn signalen voor menselijk nazicht, geen juridische conclusies.
+                    Elke gemarkeerde logies vereist beoordeling door een bevoegde medewerker.
+                  </div>
+                </div>
+
+                {/* Detail panel or placeholder */}
+                {selected ? (
+                  <DetailPanel acc={selected} onClose={() => setSelected(null)} />
+                ) : (
+                  <div style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', padding: '48px 24px',
+                    textAlign: 'center', background: V.bg, borderRadius: V.rl, border: `0.5px dashed ${V.b}` }}>
+                    <Building2 size={36} style={{ color: V.b, marginBottom: 14 }} />
+                    <div style={{ fontSize: 13, fontWeight: 500, color: V.txt2 }}>Selecteer een accommodatie</div>
+                    <div style={{ fontSize: 11, color: V.txt2, marginTop: 6, lineHeight: 1.6, opacity: 0.7 }}>
+                      Klik op een rij in de tabel om de details, periodeanalyse en boekingen te bekijken.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
 
-      {/* ── Kaart page ────────────────────────────────────────────────── */}
-      {page === 'kaart' && <KaartPage />}
+      {/* ── Kaart page ───────────────────────────────────────────────────── */}
+      {page === 'kaart' && (
+        <KaartPage
+          basisregister={basisregister}
+          basisregisterLoading={basisregisterLoading}
+          analysisResults={analysisResults}
+        />
+      )}
     </div>
   );
 }
